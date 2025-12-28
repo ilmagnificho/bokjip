@@ -45,50 +45,78 @@ const LocationPicker = ({ onLocationSelect }: { onLocationSelect: (addr: string,
 
   // Initialize Naver Map
   useEffect(() => {
-    if (isOpen && !isMapLoaded && window.naver && mapRef.current) {
-        const initMap = (lat: number, lng: number) => {
-             const center = new window.naver.maps.LatLng(lat, lng);
-             const map = new window.naver.maps.Map(mapRef.current, {
-                center: center,
-                zoom: 16,
-                scaleControl: false,
-                logoControl: false,
-                mapDataControl: false,
-            });
-            
-            mapInstance.current = map;
+    let intervalId: any;
 
-            const marker = new window.naver.maps.Marker({
-                position: center,
-                map: map
-            });
-            markerInstance.current = marker;
+    const tryInitMap = () => {
+        if (!isOpen || isMapLoaded || !mapRef.current) return;
 
-            window.naver.maps.Event.addListener(map, 'click', (e: any) => {
-                marker.setPosition(e.coord);
-                setTempCoords({ lat: e.coord.lat(), lng: e.coord.lng() });
-            });
-            
-            // Set initial temp coords
-            setTempCoords({ lat, lng });
-            setIsLoadingLocation(false);
-        };
+        if (window.naver && window.naver.maps) {
+            // Script loaded, initialize map
+            const initMap = (lat: number, lng: number) => {
+                 const center = new window.naver.maps.LatLng(lat, lng);
+                 const map = new window.naver.maps.Map(mapRef.current, {
+                    center: center,
+                    zoom: 16,
+                    scaleControl: false,
+                    logoControl: false,
+                    mapDataControl: false,
+                });
+                
+                mapInstance.current = map;
 
-        setIsLoadingLocation(true);
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (pos) => initMap(pos.coords.latitude, pos.coords.longitude),
-                (err) => {
-                    console.error(err);
-                    initMap(37.5665, 126.9780); // Fallback: Seoul City Hall
+                const marker = new window.naver.maps.Marker({
+                    position: center,
+                    map: map
+                });
+                markerInstance.current = marker;
+
+                window.naver.maps.Event.addListener(map, 'click', (e: any) => {
+                    marker.setPosition(e.coord);
+                    setTempCoords({ lat: e.coord.lat(), lng: e.coord.lng() });
+                });
+                
+                // Set initial temp coords if not already set
+                if (!tempCoords) {
+                  setTempCoords({ lat, lng });
                 }
-            );
-        } else {
-            initMap(37.5665, 126.9780);
+                setIsLoadingLocation(false);
+            };
+
+            setIsLoadingLocation(true);
+            
+            // Priority: TempCoords -> Geolocation -> Default(Seoul City Hall)
+            if (tempCoords) {
+                initMap(tempCoords.lat, tempCoords.lng);
+            } else if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => initMap(pos.coords.latitude, pos.coords.longitude),
+                    (err) => {
+                        console.error(err);
+                        initMap(37.5665, 126.9780); 
+                    }
+                );
+            } else {
+                initMap(37.5665, 126.9780);
+            }
+            
+            setIsMapLoaded(true);
+            if (intervalId) clearInterval(intervalId);
         }
+    };
+
+    if (isOpen) {
+        // Try immediately
+        tryInitMap();
         
-        setIsMapLoaded(true);
+        // Poll if script isn't ready yet (fixes race condition)
+        if (!window.naver) {
+            intervalId = setInterval(tryInitMap, 200);
+        }
     }
+
+    return () => {
+        if (intervalId) clearInterval(intervalId);
+    };
   }, [isOpen, isMapLoaded]);
 
   // Address Search Handler (Updated to use Naver Geocoder)
@@ -98,7 +126,7 @@ const LocationPicker = ({ onLocationSelect }: { onLocationSelect: (addr: string,
 
       // Check if Naver Maps and Geocoder are loaded
       if (!window.naver || !window.naver.maps || !window.naver.maps.Service) {
-          alert("지도 서비스가 아직 로드되지 않았습니다. 잠시 후 다시 시도해주세요.");
+          alert("지도 서비스가 로딩 중입니다. 잠시 후 다시 시도해주세요.");
           return;
       }
 
@@ -112,14 +140,14 @@ const LocationPicker = ({ onLocationSelect }: { onLocationSelect: (addr: string,
               setIsSearching(false);
 
               if (status !== window.naver.maps.Service.Status.OK) {
-                  alert('검색 중 오류가 발생했습니다.');
+                  alert('검색 결과가 없습니다. 도로명 주소를 정확히 입력해주세요.');
                   return;
               }
 
               const result = response.v2;
               const items = result.addresses;
 
-              if (items.length > 0) {
+              if (items && items.length > 0) {
                   const item = items[0];
                   const newLat = parseFloat(item.y);
                   const newLng = parseFloat(item.x);
@@ -127,11 +155,16 @@ const LocationPicker = ({ onLocationSelect }: { onLocationSelect: (addr: string,
                   if (mapInstance.current) {
                       const newCenter = new window.naver.maps.LatLng(newLat, newLng);
                       mapInstance.current.setCenter(newCenter);
-                      markerInstance.current.setPosition(newCenter);
+                      mapInstance.current.setZoom(17); // Zoom in on result
+                      
+                      if (markerInstance.current) {
+                        markerInstance.current.setPosition(newCenter);
+                      }
+                      
                       setTempCoords({ lat: newLat, lng: newLng });
                   }
               } else {
-                  alert("주소를 찾을 수 없습니다. 도로명 주소를 정확히 입력해주세요.");
+                  alert("주소를 찾을 수 없습니다.");
               }
           });
       } catch (err) {
@@ -143,7 +176,11 @@ const LocationPicker = ({ onLocationSelect }: { onLocationSelect: (addr: string,
 
   const handleConfirm = () => {
       if (tempCoords) {
-          const addrText = searchQuery ? searchQuery : `위도 ${tempCoords.lat.toFixed(4)}, 경도 ${tempCoords.lng.toFixed(4)}`;
+          // Format address nicely if possible, else use coordinates
+          const addrText = searchQuery 
+            ? searchQuery 
+            : `설정된 위치 (위도:${tempCoords.lat.toFixed(4)}, 경도:${tempCoords.lng.toFixed(4)})`;
+            
           onLocationSelect(addrText, tempCoords);
           setIsOpen(false);
       }
@@ -219,9 +256,8 @@ const LocationPicker = ({ onLocationSelect }: { onLocationSelect: (addr: string,
                                 <AlertTriangle className="w-10 h-10 text-[#E2C275] mb-4" />
                                 <h4 className="font-bold text-lg mb-2">지도를 불러올 수 없습니다</h4>
                                 <p className="text-sm text-gray-400 mb-4">
-                                    인증 실패 원인:<br/>
-                                    네이버 클라우드 Console의 <b>Web 서비스 URL</b>에<br/>
-                                    <span className="text-[#E2C275]">현재 접속한 도메인</span>이 등록되지 않았습니다.
+                                    로딩이 지연되고 있습니다.<br/>
+                                    네이버 지도 API 설정을 확인해주세요.
                                 </p>
                             </div>
                         )}
@@ -261,19 +297,23 @@ export default function App() {
   });
   const [result, setResult] = useState<AnalysisResult | null>(null);
 
-  // Dynamic Script Loader for Naver Maps
+  // Dynamic Script Loader for Naver Maps (Robust Version)
   useEffect(() => {
     // @ts-ignore
     const clientId = import.meta.env?.VITE_NAVER_CLIENT_ID;
+    const SCRIPT_ID = 'naver-map-script';
 
-    if (clientId && !window.naver) {
+    if (clientId && !document.getElementById(SCRIPT_ID)) {
       const script = document.createElement('script');
-      // Updated: oapi -> openapi and added &submodules=geocoder
+      script.id = SCRIPT_ID;
       script.src = `https://openapi.map.naver.com/openapi/v3/maps.js?ncpClientId=${clientId}&submodules=geocoder`;
       script.async = true;
       script.onload = () => {
           console.log("Naver Maps loaded with Geocoder");
       };
+      script.onerror = () => {
+          console.error("Failed to load Naver Maps");
+      }
       document.head.appendChild(script);
     }
   }, []);
