@@ -452,7 +452,7 @@ export default function App() {
             <div className="px-5 pt-4 pb-2 sticky top-0 bg-[#050B18]/95 backdrop-blur-md z-40">
                 <div className="flex justify-between items-center mb-2">
                     <button onClick={resetApp} className="text-gray-400 hover:text-white"><Compass className="w-5 h-5" /></button>
-                    {appState !== 'RESULT' && <span className="text-xs font-bold text-[#E2C275] tracking-widest">복집 (LUCKY HOUSE)</span>}
+                    {appState !== 'RESULT' && <span className="text-xs font-bold text-[#E2C275] tracking-widest">복집 (BokJip)</span>}
                     <div className="w-5" /> 
                 </div>
                 {appState.startsWith('SURVEY') && (
