@@ -11,6 +11,7 @@ import { analyzeFortune } from './services/fengShuiLogic';
 declare global {
   interface Window {
     naver: any;
+    navermap_authFailure?: () => void;
   }
 }
 
@@ -297,16 +298,22 @@ export default function App() {
   });
   const [result, setResult] = useState<AnalysisResult | null>(null);
 
-  // Dynamic Script Loader for Naver Maps (Robust Version)
+  // Dynamic Script Loader for Naver Maps (Updated for v3 & ncpKeyId)
   useEffect(() => {
     // @ts-ignore
     const clientId = import.meta.env?.VITE_NAVER_CLIENT_ID;
     const SCRIPT_ID = 'naver-map-script';
 
+    // Global Auth Failure Handler
+    window.navermap_authFailure = function () {
+      alert("네이버 지도 인증에 실패했습니다.\nClient ID가 올바른지, Web 서비스 URL 설정에 도메인이 등록되었는지 확인해주세요.");
+    };
+
     if (clientId && !document.getElementById(SCRIPT_ID)) {
       const script = document.createElement('script');
       script.id = SCRIPT_ID;
-      script.src = `https://openapi.map.naver.com/openapi/v3/maps.js?ncpClientId=${clientId}&submodules=geocoder`;
+      // Updated URL: oapi.map.naver.com + ncpKeyId
+      script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${clientId}&submodules=geocoder`;
       script.async = true;
       script.onload = () => {
           console.log("Naver Maps loaded with Geocoder");
