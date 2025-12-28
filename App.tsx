@@ -29,10 +29,10 @@ const DIRECTIONS = [
 ];
 
 const TESTIMONIALS = [
-    { text: "이사 가려던 집이 흉가인 걸 알고 피했어요.", user: "김OO님 (32세)", icon: "🔥" },
-    { text: "추천해주신 소품 두고 일이 술술 풀려요.", user: "이OO님 (28세)", icon: "🍀" },
-    { text: "우리 집 방향이랑 제 사주가 상극이었네요.", user: "박OO님 (45세)", icon: "🏠" },
-    { text: "재미로 봤는데 소름돋게 잘 맞아요.", user: "최OO님 (24세)", icon: "✨" },
+    { text: "이사 가려던 집이 흉가인 걸 알고 피했어요.", user: "김OO님 (32세/이사준비)", icon: "🔥" },
+    { text: "추천해주신 가구 배치로 바꾸고 승진했어요.", user: "이OO님 (28세/거주중)", icon: "🍀" },
+    { text: "계약 직전에 확인했는데 안하길 잘했네요.", user: "박OO님 (45세/매매)", icon: "🏠" },
+    { text: "원룸 침대 방향만 바꿨는데 잠이 잘 와요.", user: "최OO님 (24세/자취)", icon: "✨" },
 ];
 
 type AppState = 'LANDING' | 'DISCLAIMER_CHECK' | 'SURVEY_IDENTITY' | 'SURVEY_LOCATION' | 'SURVEY_DETAILS' | 'LOADING' | 'RESULT';
@@ -447,12 +447,23 @@ export default function App() {
     <div className="min-h-screen bg-[#050B18] text-[#E2C275] font-sans overflow-x-hidden selection:bg-[#E2C275] selection:text-[#050B18]">
       <main className="relative z-10 max-w-md mx-auto min-h-screen flex flex-col">
         
-        {/* Header - Compact */}
+        {/* Header - Branding Logo Updated */}
         {(appState !== 'LANDING' && appState !== 'DISCLAIMER_CHECK') && (
             <div className="px-5 pt-4 pb-2 sticky top-0 bg-[#050B18]/95 backdrop-blur-md z-40">
                 <div className="flex justify-between items-center mb-2">
                     <button onClick={resetApp} className="text-gray-400 hover:text-white"><Compass className="w-5 h-5" /></button>
-                    {appState !== 'RESULT' && <span className="text-xs font-bold text-[#E2C275] tracking-widest">복집 (BokJip)</span>}
+                    {/* Logo Area */}
+                    {appState !== 'RESULT' && (
+                        <div className="flex items-center gap-1.5 opacity-90">
+                            {/* Simple SVG Logo */}
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E2C275" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-80">
+                                <path d="M12 2L2 9l10 7 10-7-10-7Z"/>
+                                <path d="M2 12l10 7 10-7"/>
+                                <path d="M2 17l10 7 10-7"/>
+                            </svg>
+                            <span className="text-xs font-black text-[#E2C275] tracking-widest uppercase">BokJip</span>
+                        </div>
+                    )}
                     <div className="w-5" /> 
                 </div>
                 {appState.startsWith('SURVEY') && (
@@ -470,11 +481,15 @@ export default function App() {
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E2C275]/10 border border-[#E2C275]/30 text-[#E2C275] text-[10px] font-bold mb-4 tracking-wide backdrop-blur-md">
                         <Sparkles className="w-3 h-3" /> 국내 최초 풍수 AI
                     </div>
-                    <h1 className="text-5xl font-black text-white leading-[1.1] mb-4 tracking-tight">
-                        집이<br/> 
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#E2C275] via-[#F5E3B3] to-[#E2C275]">당신의 운명</span>을<br/>
-                        바꾼다면?
+                    {/* Main Copy Updated for Moving/Living Target */}
+                    <h1 className="text-5xl font-black text-white leading-[1.1] mb-2 tracking-tight">
+                        이사 갈 집?<br/> 
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#E2C275] via-[#F5E3B3] to-[#E2C275]">지금 사는 집?</span>
                     </h1>
+                    <p className="text-gray-400 text-sm font-light mt-4">
+                        계약 전 필수 체크. 당신의 운명을 바꿀 터인지<br/>
+                        3초 만에 확인하세요.
+                    </p>
                 </div>
 
                 <div className="space-y-4">
@@ -483,7 +498,7 @@ export default function App() {
                         onClick={() => setAppState('DISCLAIMER_CHECK')}
                         className="w-full py-4 bg-gradient-to-r from-[#B8934D] via-[#E2C275] to-[#B8934D] text-[#050B18] font-black text-xl rounded-2xl shadow-[0_0_30px_rgba(226,194,117,0.4)] hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
                     >
-                        내 집과 궁합 보기 <ArrowRight className="w-6 h-6" />
+                        우리 집 기운 확인하기 <ArrowRight className="w-6 h-6" />
                     </button>
                     <div className="text-center space-y-2 mt-4">
                         <p className="text-[10px] text-gray-600">30년 경력 풍수 전문가 자문 알고리즘 적용</p>
@@ -501,7 +516,11 @@ export default function App() {
                      <p className="text-gray-400 text-xs leading-relaxed text-center mb-6">
                          본 서비스는 통계와 풍수 이론을 기반으로 하나<br/>과학적 근거는 없으므로 재미로만 즐겨주세요.
                      </p>
-                     <button onClick={() => setAppState('SURVEY_IDENTITY')} className="w-full py-3 bg-[#E2C275] text-[#050B18] font-bold rounded-xl mb-3">네, 이해했습니다</button>
+                     <div className="space-y-2">
+                        <button onClick={() => setAppState('SURVEY_IDENTITY')} className="w-full py-3 bg-[#E2C275] text-[#050B18] font-bold rounded-xl">네, 이해했습니다</button>
+                        {/* Exit Button Added */}
+                        <button onClick={() => setAppState('LANDING')} className="w-full py-3 bg-[#151c32] text-gray-400 font-bold rounded-xl hover:text-white">나가기</button>
+                     </div>
                  </div>
             </div>
         )}
@@ -624,15 +643,17 @@ export default function App() {
                                     </div>
                                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-[1px] z-10 p-6 text-center">
                                         <Lock className="w-8 h-8 text-[#E2C275] mb-2 animate-bounce" />
-                                        <h3 className="text-white font-bold text-base mb-1">상세 분석 & 비보 솔루션</h3>
+                                        <h3 className="text-white font-bold text-base mb-1">상세 분석 & 이사/거주 솔루션</h3>
                                         <p className="text-[11px] text-gray-400 mb-4 leading-relaxed">
-                                            정확한 지형 분석, 가구 배치, 개운템 등<br/>
+                                            정밀 지형 분석, 가구 배치, 계약 조언 등<br/>
                                             3단 구성의 프리미엄 리포트를 확인하세요.
                                         </p>
+                                        {/* Price adjusted to 1900 KRW */}
                                         <button 
                                             onClick={() => setShowPaymentModal(true)} 
                                             className="w-full py-3 bg-gradient-to-r from-[#B8934D] to-[#E2C275] text-[#050B18] font-black rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_0_20px_rgba(226,194,117,0.4)] text-sm"
                                         >
+                                            <span className="line-through opacity-50 mr-2 text-xs">15,000원</span>
                                             {result.premiumReport.price}에 잠금 해제
                                         </button>
                                     </div>
@@ -716,16 +737,16 @@ export default function App() {
                             <ShieldCheck className="w-6 h-6 text-[#E2C275]" />
                         </div>
                         <div>
-                            <p className="text-gray-400 text-xs">상품명</p>
-                            <p className="text-white font-bold">복집 프리미엄 리포트</p>
+                            <p className="text-gray-400 text-xs line-through opacity-50">15,000원</p>
+                            <p className="text-white font-bold text-lg">복집 프리미엄 리포트</p>
                         </div>
-                        <div className="ml-auto text-lg font-black text-[#E2C275]">3,900원</div>
+                        <div className="ml-auto text-xl font-black text-[#E2C275] animate-pulse">1,900원</div>
                     </div>
                     
                     <ul className="text-xs text-gray-400 mb-6 space-y-2 bg-white/5 p-4 rounded-lg">
-                        <li className="flex gap-2">✅ <span className="text-gray-300">정밀 지형 분석 데이터 포함</span></li>
+                        <li className="flex gap-2">✅ <span className="text-gray-300">정밀 지형 분석 & 계약 조언</span></li>
                         <li className="flex gap-2">✅ <span className="text-gray-300">내 사주 맞춤형 침대/가구 배치도</span></li>
-                        <li className="flex gap-2">✅ <span className="text-gray-300">흉살을 막는 비보(裨補) 솔루션</span></li>
+                        <li className="flex gap-2">✅ <span className="text-gray-300">이사 전 꼭 해야 할 비보(裨補) 솔루션</span></li>
                     </ul>
 
                     <button onClick={handlePurchase} className="w-full py-4 bg-[#E2C275] text-[#050B18] font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-[#c2a661]">
