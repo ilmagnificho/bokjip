@@ -3,7 +3,7 @@ import {
   Compass, MapPin, Sparkles, RefreshCw, Share2, 
   ShoppingBag, Camera, CheckCircle2, 
   AlertTriangle, Lock, Search, Map as MapIcon, X,
-  ChevronRight, ArrowRight, Ghost, Star, ChevronLeft, Unlock, ShieldCheck, TrendingUp, CreditCard, Bug, Info, MousePointerClick
+  ChevronRight, ArrowRight, Ghost, Star, ChevronLeft, Unlock, ShieldCheck, TrendingUp, CreditCard, Bug, Info, MousePointerClick, Edit2, ExternalLink
 } from 'lucide-react';
 import { UserData, AnalysisResult, Coordinates, HouseTier, CompatibilityDetail } from './types';
 import { analyzeFortune } from './services/fengShuiLogic';
@@ -52,12 +52,12 @@ const getClientId = () => {
 
 // --- Components ---
 
-// 1. Liquid Glass Hexagon Radar (Updated Visuals & Interaction)
+// 1. Liquid Glass Hexagon Radar
 const HexagonRadar = ({ data }: { data: CompatibilityDetail[] }) => {
     const [selectedMetric, setSelectedMetric] = useState<CompatibilityDetail | null>(null);
-    const size = 220;
+    const size = 200; // Slightly smaller for mobile
     const center = size / 2;
-    const radius = 80;
+    const radius = 60; // Reduced radius to make room for external labels
     const sides = 6;
     
     const getPoints = (r: number) => {
@@ -76,25 +76,20 @@ const HexagonRadar = ({ data }: { data: CompatibilityDetail[] }) => {
     const polygonPoints = dataPoints.map(p => `${p.x},${p.y}`).join(' ');
 
     return (
-        <div className="relative w-[220px] h-[220px] mx-auto my-2 group">
+        <div className="relative w-[200px] h-[200px] mx-auto my-0 group">
             <svg width={size} height={size} className="overflow-visible filter drop-shadow-[0_0_15px_rgba(226,194,117,0.3)]">
                 <defs>
                     <linearGradient id="liquidGold" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="rgba(226,194,117,0.6)" />
+                        <stop offset="0%" stopColor="rgba(226,194,117,0.7)" />
                         <stop offset="100%" stopColor="rgba(184,147,77,0.3)" />
                     </linearGradient>
-                    <radialGradient id="glowPoint" cx="50%" cy="50%" r="50%">
-                        <stop offset="0%" stopColor="#fff" stopOpacity="1" />
-                        <stop offset="100%" stopColor="#E2C275" stopOpacity="0" />
-                    </radialGradient>
                 </defs>
                 
                 {/* Background Grid */}
                 <polygon points={getPoints(radius)} fill="rgba(255,255,255,0.03)" stroke="rgba(226,194,117,0.1)" strokeWidth="1" />
                 <polygon points={getPoints(radius * 0.66)} fill="none" stroke="rgba(226,194,117,0.05)" strokeWidth="1" />
-                <polygon points={getPoints(radius * 0.33)} fill="none" stroke="rgba(226,194,117,0.05)" strokeWidth="1" />
                 
-                {/* Liquid Data Shape */}
+                {/* Data Shape */}
                 <polygon 
                     points={polygonPoints} 
                     fill="url(#liquidGold)" 
@@ -103,45 +98,42 @@ const HexagonRadar = ({ data }: { data: CompatibilityDetail[] }) => {
                     className="transition-all duration-1000 ease-out"
                 />
                 
-                {/* Interactive Points */}
+                {/* Points */}
                 {dataPoints.map((p, i) => (
-                    <g key={i} onClick={() => setSelectedMetric(p.data)} className="cursor-pointer hover:scale-125 transition-transform duration-200">
-                        <circle cx={p.x} cy={p.y} r="6" fill="transparent" /> {/* Hit area */}
-                        <circle cx={p.x} cy={p.y} r="3" fill="white" className="animate-pulse" />
-                        <circle cx={p.x} cy={p.y} r="3" stroke="#E2C275" strokeWidth="1" fill="none" />
-                    </g>
+                    <circle key={i} cx={p.x} cy={p.y} r="2" fill="white" />
                 ))}
             </svg>
             
-            {/* Labels */}
-            {dataPoints.map((p, i) => (
-                <div 
-                    key={i} 
-                    onClick={() => setSelectedMetric(p.data)}
-                    className="absolute text-[11px] text-gray-400 font-medium whitespace-nowrap transform -translate-x-1/2 -translate-y-1/2 cursor-pointer hover:text-white transition-colors" 
-                    style={{ left: p.x + (p.x - center) * 0.25, top: p.y + (p.y - center) * 0.25 }}
-                >
-                    {p.data.label}
-                    <div className="text-[#E2C275] text-[10px] text-center font-bold">{p.data.score}</div>
-                </div>
-            ))}
+            {/* Labels - Positioned Outside */}
+            {data.map((d, i) => {
+                const angle = (Math.PI / 180) * (i * (360 / sides) - 90);
+                // Push labels far out so they don't overlap with score points
+                const labelR = radius + 35; 
+                const x = center + labelR * Math.cos(angle);
+                const y = center + labelR * Math.sin(angle);
+                
+                return (
+                    <div 
+                        key={i} 
+                        onClick={() => setSelectedMetric(d)}
+                        className="absolute flex flex-col items-center justify-center transform -translate-x-1/2 -translate-y-1/2 cursor-pointer z-10" 
+                        style={{ left: x, top: y }}
+                    >
+                        <span className="text-[11px] text-gray-300 font-bold whitespace-nowrap shadow-black drop-shadow-md">{d.label}</span>
+                        <span className="text-[#E2C275] text-[10px] font-bold bg-[#050B18]/80 px-1 rounded-sm border border-[#E2C275]/30">{d.score}</span>
+                    </div>
+                );
+            })}
 
             {/* Glass Bubble Tooltip */}
             {selectedMetric && (
                 <div className="absolute inset-0 z-20 flex items-center justify-center animate-in fade-in zoom-in duration-200" onClick={() => setSelectedMetric(null)}>
-                    <div className="bg-[#050B18]/80 backdrop-blur-md border border-[#E2C275]/50 p-4 rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.8)] text-center max-w-[90%] relative">
+                    <div className="bg-[#050B18]/90 backdrop-blur-xl border border-[#E2C275]/50 p-4 rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.8)] text-center max-w-[90%] relative">
                         <h4 className="text-[#E2C275] font-bold text-lg mb-1">{selectedMetric.label} {selectedMetric.score}점</h4>
                         <p className="text-white text-xs mb-2">{selectedMetric.description}</p>
                         <p className="text-gray-300 text-xs italic leading-relaxed">"{selectedMetric.detailQuote}"</p>
-                        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-[#050B18]/80 border-r border-b border-[#E2C275]/50 transform rotate-45"></div>
                         <p className="text-[10px] text-gray-500 mt-2">(탭하여 닫기)</p>
                     </div>
-                </div>
-            )}
-            
-            {!selectedMetric && (
-                <div className="absolute bottom-[-20px] left-0 right-0 text-center text-[10px] text-gray-600 animate-pulse pointer-events-none">
-                    <MousePointerClick className="w-3 h-3 inline mr-1" />그래프를 눌러 상세 설명 확인
                 </div>
             )}
         </div>
@@ -180,7 +172,6 @@ const LocationPicker = ({ onLocationSelect }: { onLocationSelect: (addr: string,
   const [loadError, setLoadError] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState("");
   const mapInstance = useRef<any>(null);
-  const markerInstance = useRef<any>(null);
   const [mapInitialized, setMapInitialized] = useState(false);
 
   useEffect(() => {
@@ -189,8 +180,6 @@ const LocationPicker = ({ onLocationSelect }: { onLocationSelect: (addr: string,
     if (!clientId && !window.naver) { setLoadError(true); return; }
 
     window.navermap_authFailure = function () {
-        console.error("🚨 Naver Maps Auth Failure");
-        alert("지도 인증 실패: Client ID와 웹 서비스 URL 설정을 확인하세요.");
         setLoadError(true);
     };
 
@@ -205,7 +194,6 @@ const LocationPicker = ({ onLocationSelect }: { onLocationSelect: (addr: string,
             });
             mapInstance.current = map;
             const marker = new window.naver.maps.Marker({ position: center, map: map });
-            markerInstance.current = marker;
             
             window.naver.maps.Event.addListener(map, 'click', (e: any) => {
                 marker.setPosition(e.coord);
@@ -225,7 +213,6 @@ const LocationPicker = ({ onLocationSelect }: { onLocationSelect: (addr: string,
             setMapInitialized(true);
             setLoadError(false);
         } catch (e) {
-            console.error("Map Init Exception:", e);
             setLoadError(true);
         }
     };
@@ -278,7 +265,6 @@ const LocationPicker = ({ onLocationSelect }: { onLocationSelect: (addr: string,
                   const newLng = parseFloat(item.x);
                   const newCenter = new window.naver.maps.LatLng(newLat, newLng);
                   mapInstance.current.setCenter(newCenter);
-                  markerInstance.current.setPosition(newCenter);
                   setTempCoords({ lat: newLat, lng: newLng });
               } else { alert("정확한 주소를 찾을 수 없습니다."); }
           });
@@ -317,7 +303,7 @@ const LocationPicker = ({ onLocationSelect }: { onLocationSelect: (addr: string,
                     <div className="p-4 border-b border-[#E2C275]/10 bg-[#0A1224] z-10">
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-white font-bold flex items-center gap-2">
-                                <MapPin className="w-4 h-4 text-[#E2C275]" /> 
+                                <MapIcon className="w-4 h-4 text-[#E2C275]" /> 
                                 {loadError ? "주소 직접 입력" : "위치 설정"}
                             </h3>
                             <button onClick={() => setIsOpen(false)}><X className="w-6 h-6 text-gray-400" /></button>
@@ -334,18 +320,12 @@ const LocationPicker = ({ onLocationSelect }: { onLocationSelect: (addr: string,
                         <div className="flex-1 relative bg-gray-900 overflow-hidden">
                             <div ref={mapRef} className="w-full h-full" />
                             <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur px-3 py-1 rounded-full text-[10px] text-white shadow-lg pointer-events-none z-10">지도를 움직여 핀을 집에 맞춰주세요</div>
-                            {isLoadingLocation && (
-                                <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-20">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-[#E2C275]"></div>
-                                </div>
-                            )}
                         </div>
                     ) : (
                         <div className="flex-1 bg-[#0A1224] flex flex-col items-center justify-center p-6 text-center space-y-4">
-                            <div className="w-20 h-20 bg-[#151c32] rounded-full flex items-center justify-center mb-2">
+                             <div className="w-20 h-20 bg-[#151c32] rounded-full flex items-center justify-center mb-2">
                                 <MapPin className="w-10 h-10 text-gray-500" />
                             </div>
-                            <h4 className="text-white font-bold">수동 주소 입력 모드</h4>
                             <p className="text-gray-400 text-sm">상세 주소를 입력하고 상단의 '확인'을 눌러주세요.</p>
                         </div>
                     )}
@@ -381,12 +361,10 @@ export default function App() {
     const params = new URLSearchParams(window.location.search);
     if (params.get('share') === 'true' && params.get('score')) {
         setIsSharedMode(true);
-        // Reconstruct limited result from URL (Demo purpose simplification)
         const score = parseInt(params.get('score') || '0');
         const tier = (params.get('tier') || 'B') as HouseTier;
-        const name = params.get('name') || '익명';
+        const name = params.get('name') || '방문자';
         
-        // Mock data for shared view (Since we don't have backend persistence)
         setResult({
             totalScore: score,
             tier: tier,
@@ -418,7 +396,7 @@ export default function App() {
         );
         setResult(res);
         setAppState('RESULT');
-    }, 2500);
+    }, 2000); // slightly faster loading
   };
 
   const handleShare = async () => {
@@ -446,7 +424,6 @@ export default function App() {
   };
   
   const resetApp = () => {
-    // Clear URL params
     window.history.pushState({}, '', window.location.pathname);
     setIsSharedMode(false);
     setAppState('LANDING');
@@ -468,23 +445,18 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#050B18] text-[#E2C275] font-sans overflow-x-hidden selection:bg-[#E2C275] selection:text-[#050B18]">
-      <div className="fixed inset-0 pointer-events-none">
-          <div className="absolute top-[-20%] left-[-10%] w-[80%] h-[60%] bg-purple-900/20 blur-[120px] rounded-full animate-pulse-slow" />
-          <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[50%] bg-[#E2C275]/10 blur-[100px] rounded-full" />
-      </div>
-
       <main className="relative z-10 max-w-md mx-auto min-h-screen flex flex-col">
         
-        {/* Header */}
+        {/* Header - Compact */}
         {(appState !== 'LANDING' && appState !== 'DISCLAIMER_CHECK') && (
-            <div className="px-5 pt-5 pb-2 sticky top-0 bg-[#050B18]/90 backdrop-blur-md z-40">
-                <div className="flex justify-between items-center mb-3">
-                    <button onClick={resetApp} className="text-gray-400 hover:text-white"><Compass className="w-6 h-6" /></button>
+            <div className="px-5 pt-4 pb-2 sticky top-0 bg-[#050B18]/95 backdrop-blur-md z-40">
+                <div className="flex justify-between items-center mb-2">
+                    <button onClick={resetApp} className="text-gray-400 hover:text-white"><Compass className="w-5 h-5" /></button>
                     {appState !== 'RESULT' && <span className="text-xs font-bold text-[#E2C275] tracking-widest">복집 (LUCKY HOUSE)</span>}
-                    <div className="w-6" /> 
+                    <div className="w-5" /> 
                 </div>
                 {appState.startsWith('SURVEY') && (
-                    <div className="h-1 bg-gray-800 rounded-full overflow-hidden">
+                    <div className="h-0.5 bg-gray-800 rounded-full overflow-hidden">
                         <div className="h-full bg-gradient-to-r from-[#B8934D] to-[#E2C275] transition-all duration-500" style={{width: progressWidth()}} />
                     </div>
                 )}
@@ -503,7 +475,6 @@ export default function App() {
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#E2C275] via-[#F5E3B3] to-[#E2C275]">당신의 운명</span>을<br/>
                         바꾼다면?
                     </h1>
-                    <p className="text-gray-400 text-base font-light">3초 만에 우리 집 기운을 확인하세요.</p>
                 </div>
 
                 <div className="space-y-4">
@@ -521,7 +492,7 @@ export default function App() {
             </div>
         )}
 
-        {/* Disclaimer & Surveys: Compact Styling */}
+        {/* Disclaimer & Surveys */}
         {appState === 'DISCLAIMER_CHECK' && (
             <div className="flex-1 flex flex-col justify-center px-6 animate-in zoom-in-95 duration-300 bg-black/40 backdrop-blur-sm">
                  <div className="bg-[#0A1224] border border-[#E2C275]/20 p-8 rounded-3xl shadow-2xl max-w-sm mx-auto w-full">
@@ -531,7 +502,6 @@ export default function App() {
                          본 서비스는 통계와 풍수 이론을 기반으로 하나<br/>과학적 근거는 없으므로 재미로만 즐겨주세요.
                      </p>
                      <button onClick={() => setAppState('SURVEY_IDENTITY')} className="w-full py-3 bg-[#E2C275] text-[#050B18] font-bold rounded-xl mb-3">네, 이해했습니다</button>
-                     <button onClick={() => setAppState('LANDING')} className="w-full py-3 text-gray-400 text-xs">나가기</button>
                  </div>
             </div>
         )}
@@ -597,32 +567,35 @@ export default function App() {
             </div>
         )}
 
-        {/* Result View */}
+        {/* Result View - Optimized for Mobile */}
         {appState === 'RESULT' && result && (
             <div className="flex-1 animate-in slide-in-from-bottom-8 duration-700 pb-10">
                 
-                {/* Result Hero Card */}
-                <div className="relative bg-[#0A1224] pt-4 pb-8 px-5 rounded-b-[2.5rem] shadow-2xl z-20 border-b border-[#E2C275]/10 overflow-hidden">
-                    {/* Background Noise/Gradient */}
+                {/* Result Hero - Compressed Padding */}
+                <div className="relative bg-[#0A1224] pt-4 pb-6 px-4 rounded-b-[2rem] shadow-2xl z-20 border-b border-[#E2C275]/10 overflow-visible">
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_50%_0%,rgba(226,194,117,0.1),transparent_70%)] pointer-events-none" />
                     
                     <div className="text-center relative z-10">
-                        {/* Location Badge */}
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/40 border border-[#E2C275]/20 backdrop-blur-md mb-4">
-                            <MapPin className="w-3 h-3 text-gray-400" />
-                            <span className="text-[10px] text-gray-300 tracking-tight truncate max-w-[200px]">{result.locationAnalysis}</span>
+                        {/* Location Badge with Edit */}
+                        <div className="flex justify-center mb-3">
+                             <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-black/40 border border-[#E2C275]/20 backdrop-blur-md">
+                                <MapPin className="w-3 h-3 text-gray-400" />
+                                <span className="text-[10px] text-gray-300 tracking-tight truncate max-w-[150px]">{result.locationAnalysis}</span>
+                                <button onClick={() => setAppState('SURVEY_LOCATION')} className="ml-1 p-1 bg-white/10 rounded-full hover:bg-white/20">
+                                    <Edit2 className="w-2 h-2 text-[#E2C275]" />
+                                </button>
+                            </div>
                         </div>
 
-                        <h2 className="text-2xl font-black text-white mb-2 leading-tight">{result.mainCopy}</h2>
-                        <p className="text-gray-400 text-xs mb-4 px-2 break-keep">{result.subCopy}</p>
+                        <h2 className="text-2xl font-black text-white mb-1 leading-tight">{result.mainCopy}</h2>
+                        <p className="text-gray-400 text-xs mb-2 px-2 break-keep leading-snug">{result.subCopy}</p>
                         
-                        {/* Hexagon Radar Chart */}
                         <HexagonRadar data={result.radarData} />
                         
-                        <div className="flex justify-center items-end gap-3 mt-2">
+                        <div className="flex justify-center items-end gap-3 mt-1">
                             <div className="text-center">
                                 <div className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-b from-[#E2C275] to-[#B8934D] tracking-tighter">{result.totalScore}</div>
-                                <div className="text-[10px] font-bold text-gray-500 mt-1 uppercase tracking-widest">Total Score</div>
+                                <div className="text-[10px] font-bold text-gray-500 mt-0 uppercase tracking-widest">Total Score</div>
                             </div>
                             <div className={`px-4 py-1.5 rounded-lg text-xl font-black border flex flex-col items-center justify-center h-[56px] min-w-[60px] ${result.tier === HouseTier.S ? 'bg-purple-600 text-white border-purple-400' : 'bg-[#E2C275] text-[#050B18] border-[#B8934D]'}`}>
                                 <span className="text-[9px] font-bold opacity-70 mb-[-2px]">TIER</span>
@@ -632,28 +605,19 @@ export default function App() {
                     </div>
                 </div>
 
-                <div className="px-5 mt-6 space-y-6">
+                <div className="px-4 mt-5 space-y-5">
                     
-                    {/* Shared Mode: CTA to Check Own */}
-                    {isSharedMode && (
-                        <div className="p-5 bg-gradient-to-r from-[#E2C275]/20 to-[#B8934D]/10 rounded-2xl border border-[#E2C275]/30 text-center">
-                            <h3 className="text-white font-bold mb-2">우리 집도 명당일까?</h3>
-                            <button onClick={resetApp} className="w-full py-3 bg-[#E2C275] text-[#050B18] font-bold rounded-xl shadow-lg">무료로 내 집 확인하기</button>
-                        </div>
-                    )}
-
-                    {/* Premium Report (Card Style) */}
+                    {/* Premium Report */}
                     {!isSharedMode && (
-                        <div className="space-y-4">
+                        <div className="space-y-3">
                             <h3 className="text-white font-bold text-base flex items-center gap-2 px-1">
                                 <ShieldCheck className="w-4 h-4 text-[#E2C275]"/> 상세 분석 리포트
                             </h3>
                             
-                            {/* Locked State */}
                             {!isPremiumUnlocked ? (
                                 <div className="relative rounded-2xl overflow-hidden border border-[#E2C275]/20 shadow-lg bg-[#0A1224]">
-                                    <div className="p-6 space-y-4 blur-[3px] opacity-40 select-none grayscale-[50%] h-[200px]">
-                                        <div className="w-2/3 h-4 bg-gray-700 rounded animate-pulse" />
+                                    <div className="p-5 space-y-4 blur-[3px] opacity-40 select-none grayscale-[50%] h-[180px]">
+                                        <div className="w-2/3 h-4 bg-gray-700 rounded" />
                                         <div className="w-full h-2 bg-gray-800 rounded" />
                                         <div className="w-full h-2 bg-gray-800 rounded" />
                                         <div className="w-1/2 h-4 bg-gray-700 rounded mt-4" />
@@ -674,23 +638,21 @@ export default function App() {
                                     </div>
                                 </div>
                             ) : (
-                                /* Unlocked Content */
                                 <div className="space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                     {result.premiumReport.sections.map((section, i) => (
-                                        <div key={i} className="bg-[#151c32] rounded-xl border border-white/10 p-5">
+                                        <div key={i} className="bg-[#151c32] rounded-xl border border-white/10 p-5 shadow-lg">
                                             <div className="flex items-center gap-2 mb-3 pb-2 border-b border-white/5">
-                                                {/* Simple Icon Logic */}
-                                                {section.icon === 'Map' && <MapIcon className="w-4 h-4 text-blue-400" />}
-                                                {section.icon === 'Layout' && <Compass className="w-4 h-4 text-green-400" />}
-                                                {section.icon === 'Star' && <Star className="w-4 h-4 text-yellow-400" />}
-                                                <h4 className="font-bold text-white text-sm">{section.title}</h4>
+                                                {section.icon === 'Map' && <MapIcon className="w-5 h-5 text-blue-400" />}
+                                                {section.icon === 'Layout' && <Compass className="w-5 h-5 text-green-400" />}
+                                                {section.icon === 'Star' && <Star className="w-5 h-5 text-yellow-400" />}
+                                                <h4 className="font-bold text-white text-base">{section.title}</h4>
                                             </div>
-                                            <ul className="space-y-2">
+                                            <ul className="space-y-3">
                                                 {section.content.map((line, j) => (
-                                                    <li key={j} className="text-xs text-gray-300 leading-relaxed pl-2 relative">
-                                                        <span className="absolute left-0 top-1.5 w-0.5 h-0.5 bg-gray-500 rounded-full"></span>
+                                                    <li key={j} className="text-sm text-gray-200 leading-7 pl-3 relative">
+                                                        <span className="absolute left-0 top-2.5 w-1 h-1 bg-[#E2C275] rounded-full"></span>
                                                         {line.split('**').map((part, k) => 
-                                                            k % 2 === 1 ? <span key={k} className="text-[#E2C275] font-bold">{part}</span> : part
+                                                            k % 2 === 1 ? <span key={k} className="text-[#E2C275] font-bold bg-[#E2C275]/10 px-1 rounded">{part}</span> : part
                                                         )}
                                                     </li>
                                                 ))}
@@ -702,17 +664,27 @@ export default function App() {
                         </div>
                     )}
 
-                    {/* Item Recommendations */}
+                    {/* Item Recommendations with Coupang Disclaimer */}
                     {!isSharedMode && (
                         <div>
                             <h3 className="text-white font-bold text-base mb-3 flex items-center gap-2 px-1"><ShoppingBag className="w-4 h-4 text-[#E2C275]"/> 부족한 기운 채우기</h3>
+                            
+                            {/* Coupang Disclaimer Box */}
+                            <div className="mb-3 p-2 bg-gray-800/50 rounded-lg border border-gray-700">
+                                <p className="text-[10px] text-gray-500 text-center leading-snug">
+                                    이 포스팅은 쿠팡 파트너스 활동의 일환으로,<br/>이에 따른 일정액의 수수료를 제공받습니다.
+                                </p>
+                            </div>
+
                             <div className="space-y-2">
                                 {result.items.map((item, i) => (
-                                    <div key={i} onClick={() => window.open(`https://m.search.shopping.naver.com/search/all?query=${encodeURIComponent(item.searchKeyword)}`, '_blank')} className="flex items-center gap-3 p-3 bg-[#151c32] rounded-xl border border-white/5 cursor-pointer hover:border-[#E2C275]/50 transition-all group relative overflow-hidden">
+                                    <div key={i} onClick={() => window.open(`https://www.coupang.com/np/search?component=&q=${encodeURIComponent(item.searchKeyword)}`, '_blank')} className="flex items-center gap-3 p-3 bg-[#151c32] rounded-xl border border-white/5 cursor-pointer hover:border-[#E2C275]/50 transition-all group relative overflow-hidden shadow-md">
                                         <div className="absolute top-0 right-0 bg-[#E2C275] text-[#050B18] text-[8px] font-bold px-1.5 py-0.5 rounded-bl-lg">{item.effect}</div>
                                         <div className="w-10 h-10 rounded-full bg-[#E2C275]/10 flex items-center justify-center text-[#E2C275] font-bold text-sm">{i+1}</div>
                                         <div className="flex-1 min-w-0">
-                                            <h4 className="text-white font-bold text-sm mb-0.5 truncate">{item.name}</h4>
+                                            <h4 className="text-white font-bold text-sm mb-0.5 truncate flex items-center gap-1">
+                                                {item.name} <ExternalLink className="w-3 h-3 text-gray-500"/>
+                                            </h4>
                                             <p className="text-gray-400 text-[10px] truncate">{item.description}</p>
                                         </div>
                                         <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-white" />
@@ -722,9 +694,8 @@ export default function App() {
                         </div>
                     )}
 
-                    {/* Action Buttons */}
                     <div className="flex gap-2 pb-8">
-                        <button onClick={resetApp} className="flex-1 py-3 border border-gray-700 text-gray-400 rounded-xl font-bold text-xs hover:bg-white/5 flex items-center justify-center gap-2"><RefreshCw className="w-3 h-3"/> {isSharedMode ? "나도 해보기" : "다시하기"}</button>
+                        <button onClick={resetApp} className="flex-1 py-3 border border-gray-700 text-gray-400 rounded-xl font-bold text-xs hover:bg-white/5 flex items-center justify-center gap-2"><RefreshCw className="w-3 h-3"/> 다시하기</button>
                         <button onClick={handleShare} className="flex-1 py-3 bg-[#FAE100] text-[#3B1E1E] rounded-xl font-bold text-xs flex items-center justify-center gap-2 hover:bg-[#ffe600]"><Share2 className="w-3 h-3"/> 결과 공유</button>
                     </div>
                 </div>
