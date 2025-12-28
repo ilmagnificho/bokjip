@@ -18,31 +18,52 @@ export interface UserData {
   birthDate: string; 
   birthTime: string; // Optional
   address: string;
-  coordinates: Coordinates | null; // Optional now
+  coordinates: Coordinates | null; 
   houseDirection: string;
   roomImage: File | null;
 }
 
+// New: Compatibility Radar Chart Data
+export interface CompatibilityDetail {
+  label: string;
+  score: number; // 0-100
+  description: string; // Analysis text for this specific metric
+}
+
 export interface AnalysisResult {
-  score: number;
-  excessElement: FiveElement;
-  neededElements: FiveElement[];
+  totalScore: number;
+  tier: HouseTier;
   
-  // Free Content
-  basicSummary: string; 
-  luckyColor: string;
+  // The 6-axis data for the Radar Chart
+  radarData: CompatibilityDetail[];
   
-  // Premium Content (To be unlocked)
-  geoAnalysis: string; // Analysis based on Lat/Lng
-  visionAnalysis?: string;
-  badLuckWarning: string; // Disclaimer/Warning about bad spots
+  // Copywriting
+  mainCopy: string; 
+  subCopy: string;
   
+  // Paid Report Content
+  premiumReport: {
+    title: string;
+    content: string[]; // List of detailed insights
+    price: string; // e.g., "3,900원"
+  };
+
+  // Item Recommendations connected to logic
   items: RecommendationItem[];
+}
+
+export enum HouseTier {
+  S = 'S', 
+  A = 'A', 
+  B = 'B', 
+  C = 'C', 
 }
 
 export interface RecommendationItem {
   id: number;
   name: string;
+  effect: string; // "Why" logic: e.g. "Low Water Energy -> Restores Balance"
   description: string;
-  searchKeyword: string; // For automated search link
+  searchKeyword: string; 
+  tag: string; 
 }
