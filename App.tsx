@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Compass, MapPin, User, Sparkles, RefreshCw, Share2, 
-  ShoppingBag, Camera, Image as ImageIcon, CheckCircle2, 
+  ShoppingBag, Camera, CheckCircle2, 
   AlertTriangle, Lock, Search, Map as MapIcon, X,
-  ChevronRight, Locate, ArrowRight
+  ChevronRight, ArrowRight, Sun, Moon, Clock
 } from 'lucide-react';
 import { UserData, AnalysisResult, Coordinates } from './types';
 import { analyzeFortune } from './services/fengShuiLogic';
@@ -91,14 +91,14 @@ const LocationPicker = ({ onLocationSelect }: { onLocationSelect: (addr: string,
     }
   }, [isOpen, isMapLoaded]);
 
-  // Address Search Handler (Using OpenStreetMap Nominatim for Frontend-only solution)
+  // Address Search Handler
   const handleAddressSearch = async (e?: React.FormEvent) => {
       e?.preventDefault();
       if (!searchQuery.trim()) return;
 
       setIsSearching(true);
       try {
-          // Use OpenStreetMap Nominatim API (Free, no key needed for client-side low volume)
+          // Use OpenStreetMap Nominatim API
           const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}`);
           const data = await response.json();
 
@@ -136,13 +136,20 @@ const LocationPicker = ({ onLocationSelect }: { onLocationSelect: (addr: string,
     <>
         <div 
             onClick={() => setIsOpen(true)}
-            className="w-full bg-[#0A1224] border border-[#E2C275]/10 rounded-xl py-3 px-4 text-sm flex items-center justify-between cursor-pointer hover:border-[#E2C275]/50 transition-colors"
+            className="w-full bg-[#0A1224] border border-[#E2C275]/20 rounded-xl py-3 px-4 text-sm flex items-center justify-between cursor-pointer hover:border-[#E2C275] transition-colors group"
         >
-            <span className="text-gray-400 flex items-center gap-2 truncate">
-                <MapIcon className="w-4 h-4 flex-shrink-0" /> 
-                {tempCoords ? (searchQuery || "위치 선택 완료") : "주소 검색 / 지도에서 찾기"}
+            <span className={`flex items-center gap-2 truncate ${tempCoords ? 'text-white' : 'text-gray-400'}`}>
+                <MapIcon className={`w-4 h-4 flex-shrink-0 ${tempCoords ? 'text-[#E2C275]' : ''}`} /> 
+                {tempCoords ? (searchQuery || "위치 선택 완료") : "주소 검색 / 지도에서 찾기 (선택)"}
             </span>
-            <Search className="w-4 h-4 text-[#E2C275]" />
+            {tempCoords ? (
+                <CheckCircle2 className="w-4 h-4 text-[#E2C275]" />
+            ) : (
+                <div className="flex items-center gap-2">
+                    <span className="text-[10px] bg-[#E2C275]/10 text-[#E2C275] px-1.5 py-0.5 rounded hidden sm:inline-block">정확도 +30%</span>
+                    <Search className="w-4 h-4 text-gray-500 group-hover:text-[#E2C275]" />
+                </div>
+            )}
         </div>
 
         {isOpen && (
@@ -177,7 +184,6 @@ const LocationPicker = ({ onLocationSelect }: { onLocationSelect: (addr: string,
                     </div>
                     
                     <div className="flex-1 relative bg-gray-900">
-                        {/* Map Container */}
                         <div ref={mapRef} className="w-full h-full" />
                         
                         {/* Center Marker Overlay Hint */}
@@ -227,9 +233,10 @@ export default function App() {
   const [isPremiumUnlocked, setIsPremiumUnlocked] = useState(false);
   const [formData, setFormData] = useState<UserData>({
     name: '',
+    gender: null,
+    calendarType: 'solar',
     birthDate: '',
     birthTime: '',
-    gender: 'female',
     address: '',
     coordinates: null,
     houseDirection: 'S',
@@ -237,7 +244,7 @@ export default function App() {
   });
   const [result, setResult] = useState<AnalysisResult | null>(null);
 
-  // Dynamic Script Loader for Naver Maps using Vercel Env Var
+  // Dynamic Script Loader for Naver Maps
   useEffect(() => {
     // @ts-ignore
     const clientId = import.meta.env?.VITE_NAVER_CLIENT_ID;
@@ -247,15 +254,34 @@ export default function App() {
       script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpClientId=${clientId}`;
       script.async = true;
       document.head.appendChild(script);
-    } else if (!clientId && !window.naver) {
-      console.warn("VITE_NAVER_CLIENT_ID is not set in environment variables.");
     }
   }, []);
 
+  const resetApp = () => {
+    setStep('input');
+    setResult(null);
+    setIsPremiumUnlocked(false);
+    setFormData({
+        name: '',
+        gender: null,
+        calendarType: 'solar',
+        birthDate: '',
+        birthTime: '',
+        address: '',
+        coordinates: null,
+        houseDirection: 'S',
+        roomImage: null
+    });
+    window.scrollTo(0,0);
+  };
+
   const handleAnalyze = async () => {
-    if (!formData.name || !formData.birthDate) return;
+    if (!formData.name || !formData.birthDate || !formData.gender) return;
     setStep('loading');
     
+    // Simulate processing time
+    const waitTime = formData.coordinates ? 3500 : 2500;
+
     setTimeout(async () => {
         const res = await analyzeFortune(
             formData.name,
@@ -266,7 +292,7 @@ export default function App() {
         );
         setResult(res);
         setStep('result');
-    }, 3000);
+    }, waitTime);
   };
 
   const handleSearchLink = (keyword: string) => {
@@ -290,17 +316,17 @@ export default function App() {
       <main className="relative z-10 max-w-md mx-auto px-6 py-8 flex flex-col min-h-screen">
         {/* Header */}
         <header className="flex justify-between items-center mb-8">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#E2C275] to-[#B8934D] p-[1px]">
+          <button onClick={resetApp} className="flex items-center gap-2 group cursor-pointer">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#E2C275] to-[#B8934D] p-[1px] group-hover:scale-105 transition-transform">
                 <div className="w-full h-full bg-[#050B18] rounded-lg flex items-center justify-center">
                     <Compass className="w-5 h-5 text-[#E2C275]" />
                 </div>
             </div>
-            <span className="font-bold text-lg text-white tracking-tight">운수좋은집</span>
-          </div>
+            <span className="font-bold text-lg text-white tracking-tight group-hover:text-[#E2C275] transition-colors">복집</span>
+          </button>
           <div className="px-3 py-1 rounded-full bg-[#E2C275]/10 text-[10px] text-[#E2C275] font-bold border border-[#E2C275]/20 flex items-center gap-1">
             <div className="w-1.5 h-1.5 rounded-full bg-[#E2C275] animate-pulse"></div>
-            Open Beta
+            Beta
           </div>
         </header>
 
@@ -313,27 +339,60 @@ export default function App() {
                         <span>30년 경력 풍수지리 전문가 AI</span>
                     </div>
                     <h1 className="text-3xl font-bold text-white leading-tight mb-3">
-                        이 집, <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#F5E3B3] to-[#d97706]">너랑 진짜 잘 맞는지</span><br/>
+                        이 집, <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#F5E3B3] to-[#d97706]">당신과 진짜 잘 맞는지</span><br/>
                         딱 3초면 알아봐 줄게
                     </h1>
                     <p className="text-[#8A94A8] text-sm leading-relaxed">
-                        겉보기엔 좋아 보여도, 나랑 안 맞는 집은 따로 있다?<br/>
+                        겉보기엔 좋아 보여도, 당신과 안 맞는 집은 따로 있다?<br/>
                         지도 정밀 분석으로 숨겨진 기운까지 확인하세요.
                     </p>
                 </div>
 
                 <div className="bg-[#0A1224]/50 backdrop-blur-md border border-[#E2C275]/10 rounded-3xl p-6 shadow-2xl space-y-6">
-                    {/* User Info */}
+                    {/* User Info - Expanded */}
                     <div className="space-y-4">
-                        <label className="text-xs font-bold text-[#8A94A8] uppercase tracking-wider ml-1">내 정보 입력</label>
+                        <label className="text-xs font-bold text-[#8A94A8] uppercase tracking-wider ml-1">내 정보 입력 (필수)</label>
+                        
+                        <input 
+                            type="text" placeholder="이름을 입력하세요"
+                            className="w-full bg-[#0A1224] border border-[#E2C275]/10 rounded-xl p-3 pl-4 text-white focus:border-[#E2C275] outline-none transition-colors placeholder-gray-600 text-sm"
+                            value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})}
+                        />
+
+                        {/* Gender & Calendar Type Grid */}
+                        <div className="grid grid-cols-2 gap-2">
+                            <div className="flex bg-[#0A1224] rounded-xl p-1 border border-[#E2C275]/10">
+                                <button 
+                                    onClick={() => setFormData({...formData, gender: 'male'})}
+                                    className={`flex-1 rounded-lg text-xs font-bold py-2 transition-all ${formData.gender === 'male' ? 'bg-[#E2C275] text-[#050B18]' : 'text-gray-500 hover:text-white'}`}
+                                >
+                                    남
+                                </button>
+                                <button 
+                                    onClick={() => setFormData({...formData, gender: 'female'})}
+                                    className={`flex-1 rounded-lg text-xs font-bold py-2 transition-all ${formData.gender === 'female' ? 'bg-[#E2C275] text-[#050B18]' : 'text-gray-500 hover:text-white'}`}
+                                >
+                                    여
+                                </button>
+                            </div>
+                             <div className="flex bg-[#0A1224] rounded-xl p-1 border border-[#E2C275]/10">
+                                <button 
+                                    onClick={() => setFormData({...formData, calendarType: 'solar'})}
+                                    className={`flex-1 rounded-lg text-xs font-bold py-2 flex items-center justify-center gap-1 transition-all ${formData.calendarType === 'solar' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-white'}`}
+                                >
+                                    <Sun className="w-3 h-3" /> 양력
+                                </button>
+                                <button 
+                                    onClick={() => setFormData({...formData, calendarType: 'lunar'})}
+                                    className={`flex-1 rounded-lg text-xs font-bold py-2 flex items-center justify-center gap-1 transition-all ${formData.calendarType === 'lunar' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-white'}`}
+                                >
+                                    <Moon className="w-3 h-3" /> 음력
+                                </button>
+                            </div>
+                        </div>
+
                         <div className="flex gap-2">
-                            <input 
-                                type="text" placeholder="이름"
-                                className="flex-1 bg-[#0A1224] border border-[#E2C275]/10 rounded-xl p-3 pl-4 text-white focus:border-[#E2C275] outline-none transition-colors placeholder-gray-600 text-sm"
-                                value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})}
-                            />
-                            {/* Date Picker Styling */}
-                            <div className="relative w-40">
+                            <div className="relative flex-1">
                                 <input 
                                     type="date"
                                     className="w-full bg-[#0A1224] border border-[#E2C275]/10 rounded-xl p-3 text-white [color-scheme:dark] text-sm focus:border-[#E2C275] outline-none transition-colors uppercase"
@@ -343,6 +402,23 @@ export default function App() {
                                 />
                             </div>
                         </div>
+
+                        {/* Optional Time Input */}
+                        <div className="relative">
+                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                                <Clock className="w-4 h-4" />
+                            </div>
+                            <input 
+                                type="time"
+                                placeholder="태어난 시간 (선택)"
+                                className="w-full bg-[#0A1224] border border-[#E2C275]/10 rounded-xl p-3 pl-10 text-white [color-scheme:dark] text-sm focus:border-[#E2C275] outline-none transition-colors"
+                                value={formData.birthTime}
+                                onChange={e => setFormData({...formData, birthTime: e.target.value})}
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-[#E2C275] bg-[#E2C275]/10 px-1.5 py-0.5 rounded pointer-events-none">
+                                정확도 +10%
+                            </span>
+                        </div>
                     </div>
 
                     <div className="h-px bg-[#E2C275]/10" />
@@ -351,7 +427,6 @@ export default function App() {
                     <div className="space-y-4">
                         <label className="text-xs font-bold text-[#8A94A8] uppercase tracking-wider flex justify-between ml-1">
                             <span>이사 갈 집 정보</span>
-                            <span className="text-[#E2C275] text-[10px] bg-[#E2C275]/10 px-2 py-0.5 rounded-full">필수</span>
                         </label>
                         
                         <LocationPicker onLocationSelect={(addr, coords) => setFormData({...formData, address: addr, coordinates: coords})} />
@@ -390,11 +465,17 @@ export default function App() {
 
                     <button 
                         onClick={handleAnalyze}
-                        disabled={!formData.name || !formData.birthDate}
+                        disabled={!formData.name || !formData.birthDate || !formData.gender}
                         className="w-full py-4 bg-gradient-to-r from-[#B8934D] via-[#E2C275] to-[#B8934D] text-[#050B18] font-bold text-lg rounded-xl shadow-[0_0_20px_rgba(226,194,117,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-2 group"
                     >
-                        무료로 결과 보기 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                        결과 확인하기 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                     </button>
+                    
+                    {!formData.coordinates && (
+                        <p className="text-[10px] text-center text-gray-500">
+                            * 주소를 입력하지 않으면 지리적 분석이 제외됩니다.
+                        </p>
+                    )}
                 </div>
             </div>
         )}
@@ -407,10 +488,18 @@ export default function App() {
                     <div className="absolute inset-4 border-2 border-[#E2C275]/20 rounded-full animate-pulse" />
                     <Compass className="absolute inset-0 m-auto w-10 h-10 text-[#E2C275]" />
                 </div>
-                <h2 className="text-xl font-bold text-white mb-2">지형과 기운을 읽는 중...</h2>
+                <h2 className="text-xl font-bold text-white mb-2">
+                    {formData.coordinates ? '지형과 사주를 정밀 분석 중...' : '사주 오행을 분석 중...'}
+                </h2>
                 <div className="text-xs text-[#8A94A8] font-mono space-y-2 text-center">
-                    <p className="animate-pulse">위도 {formData.coordinates?.lat.toFixed(4) || '??'} / 경도 {formData.coordinates?.lng.toFixed(4) || '??'} 스캔</p>
-                    <p className="text-[#E2C275] animate-pulse delay-75">수맥 및 지기(地氣) 흐름 계산 중...</p>
+                    <p className="animate-pulse">
+                        {formData.calendarType === 'solar' ? '양력' : '음력'} 생년월일 {formData.birthDate} / {formData.birthTime ? '시주(時柱) 적용' : '시주 추정'}
+                    </p>
+                    {formData.coordinates ? (
+                        <p className="text-[#E2C275] animate-pulse delay-75">위도 {formData.coordinates.lat.toFixed(2)} 지기(地氣) 스캔 중...</p>
+                    ) : (
+                        <p className="text-gray-600">위치 정보 없음 - 지기 분석 생략</p>
+                    )}
                     {formData.roomImage && <p className="animate-pulse delay-150">AI Vision 가구 배치 분석 중...</p>}
                 </div>
             </div>
@@ -420,12 +509,18 @@ export default function App() {
             <div className="flex-1 animate-in slide-in-from-bottom-8 duration-700">
                 {/* Free Score Header */}
                 <div className="text-center mb-8">
-                    <div className="inline-block px-4 py-1.5 bg-[#E2C275]/10 text-[#E2C275] text-[10px] font-bold rounded-full mb-4 border border-[#E2C275]/20 tracking-widest">BASIC REPORT</div>
+                    <div className="inline-block px-4 py-1.5 bg-[#E2C275]/10 text-[#E2C275] text-[10px] font-bold rounded-full mb-4 border border-[#E2C275]/20 tracking-widest">
+                        {formData.coordinates ? 'PREMIUM REPORT' : 'BASIC REPORT'}
+                    </div>
                     <div className="relative inline-block">
                         <h1 className="text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white via-[#E2C275] to-[#B8934D] mb-2">{result.score}</h1>
                         <span className="text-2xl font-normal text-[#8A94A8] absolute top-2 -right-8">점</span>
                     </div>
-                    <p className="text-[#8A94A8] text-sm mt-2">기본 오행 궁합 점수입니다.</p>
+                    <p className="text-[#8A94A8] text-sm mt-2">
+                        {formData.name}님과 이 집의 궁합 점수입니다.
+                        {!formData.coordinates && <br/>}
+                        {!formData.coordinates && <span className="text-xs text-red-400">* 위치 미입력으로 정확도가 낮을 수 있습니다.</span>}
+                    </p>
                 </div>
 
                 {/* Free Summary */}
@@ -514,7 +609,7 @@ export default function App() {
                 {/* Footer Buttons */}
                 <div className="grid grid-cols-2 gap-4 mb-8">
                     <button 
-                        onClick={() => { setIsPremiumUnlocked(false); setStep('input'); window.scrollTo(0,0); }}
+                        onClick={resetApp}
                         className="py-4 border border-[#E2C275]/20 text-[#E2C275] rounded-xl font-bold flex items-center justify-center gap-2 text-sm hover:bg-[#E2C275]/5 transition-colors"
                     >
                         <RefreshCw className="w-4 h-4" /> 다른 집 분석

@@ -89,8 +89,6 @@ export const analyzeFortune = async (
   const { needed, summary: baseSummary, items } = getNeededConfig(excess);
 
   // --- Geo-Logic (Simulated based on Coordinates) ---
-  // In a real app, we would query GIS data for elevation, water bodies, road networks.
-  // Here, we use the lat/lng hash to deterministically create a "Scenario".
   
   let geoScore = 0;
   let geoAnalysis = "";
@@ -119,14 +117,13 @@ export const analyzeFortune = async (
 
   } else {
     // Fallback if no map used
-    geoAnalysis = "정확한 위치 정보가 없어 지리적 분석(도로, 수맥 등)이 제외되었습니다.";
-    geoScore = 0;
+    geoAnalysis = "정확한 지리 분석을 건너뛰고 기본 지기(地氣) 분석만 수행했습니다. 집의 정확한 위치를 입력하면 주변의 수맥과 도로 살기를 파악할 수 있습니다.";
+    geoScore = 5; // Neutral default
+    badLuckWarning = "위치 정보 미입력으로 정밀 분석이 제한됩니다.";
   }
 
   // --- Direction Score ---
   let dirScore = 70;
-  // Simple check: does house direction provide needed element?
-  // N=Water, S=Fire, E=Wood, W=Metal
   const dirMap: Record<string, FiveElement> = { 'N': FiveElement.Water, 'S': FiveElement.Fire, 'E': FiveElement.Wood, 'W': FiveElement.Metal };
   const houseEl = Object.entries(dirMap).find(([k]) => houseDirection.includes(k))?.[1] || FiveElement.Earth;
   

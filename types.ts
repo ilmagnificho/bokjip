@@ -13,11 +13,12 @@ export interface Coordinates {
 
 export interface UserData {
   name: string;
+  gender: 'male' | 'female' | null;
+  calendarType: 'solar' | 'lunar';
   birthDate: string; 
-  birthTime: string;
-  gender: 'male' | 'female';
+  birthTime: string; // Optional
   address: string;
-  coordinates: Coordinates | null; // Added for map
+  coordinates: Coordinates | null; // Optional now
   houseDirection: string;
   roomImage: File | null;
 }
