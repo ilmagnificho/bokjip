@@ -127,12 +127,9 @@ const LocationPicker = ({ onLocationSelect }: { onLocationSelect: (addr: string,
                                 <AlertTriangle className="w-10 h-10 text-[#E2C275] mb-4" />
                                 <h4 className="font-bold text-lg mb-2">지도를 불러올 수 없습니다</h4>
                                 <p className="text-sm text-gray-400 mb-4">
-                                    index.html 파일의 YOUR_CLIENT_ID를<br/>
-                                    네이버 클라우드 Client ID로 변경해주세요.
+                                    네이버 지도 로딩에 실패했습니다.<br/>
+                                    Vercel 환경변수 설정을 확인해주세요.
                                 </p>
-                                <div className="text-xs bg-black/30 p-3 rounded text-left font-mono">
-                                    &lt;script src="..." ncpClientId="ID입력"&gt;
-                                </div>
                             </div>
                         )}
                     </div>
@@ -169,6 +166,22 @@ export default function App() {
     roomImage: null
   });
   const [result, setResult] = useState<AnalysisResult | null>(null);
+
+  // Dynamic Script Loader for Naver Maps using Vercel Env Var
+  useEffect(() => {
+    // Try to get env variable from Vite or standard process.env
+    // @ts-ignore
+    const clientId = import.meta.env?.VITE_NAVER_CLIENT_ID;
+
+    if (clientId && !window.naver) {
+      const script = document.createElement('script');
+      script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpClientId=${clientId}`;
+      script.async = true;
+      document.head.appendChild(script);
+    } else if (!clientId && !window.naver) {
+      console.warn("VITE_NAVER_CLIENT_ID is not set in environment variables.");
+    }
+  }, []);
 
   const handleAnalyze = async () => {
     if (!formData.name || !formData.birthDate) return;
@@ -219,8 +232,9 @@ export default function App() {
             </div>
             <span className="font-bold text-lg text-white tracking-tight">운수좋은집</span>
           </div>
-          <div className="px-3 py-1 rounded-full bg-[#E2C275]/10 text-[10px] text-[#E2C275] font-bold border border-[#E2C275]/20">
-            AI Ver 3.0
+          <div className="px-3 py-1 rounded-full bg-[#E2C275]/10 text-[10px] text-[#E2C275] font-bold border border-[#E2C275]/20 flex items-center gap-1">
+            <div className="w-1.5 h-1.5 rounded-full bg-[#E2C275] animate-pulse"></div>
+            Open Beta
           </div>
         </header>
 

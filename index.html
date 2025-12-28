@@ -13,9 +13,6 @@
     <meta property="og:description" content="내 사주에 딱 맞는 집일까? 지도와 AI로 확인하는 정밀 풍수 진단." />
     <meta property="og:image" content="https://images.unsplash.com/photo-1507652313519-d4e9174996dd?q=80&w=1200&auto=format&fit=crop" />
     
-    <!-- Naver Maps API (Replace YOUR_CLIENT_ID with actual key) -->
-    <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpClientId=YOUR_CLIENT_ID"></script>
-
     <!-- Tailwind & Fonts -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -82,5 +79,7 @@
 </head>
   <body>
     <div id="root"></div>
+    <!-- Entry Point for Vite/React -->
+    <script type="module" src="/index.tsx"></script>
   </body>
 </html>
