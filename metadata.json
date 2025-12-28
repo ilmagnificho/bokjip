@@ -1,0 +1,8 @@
+{
+  "name": "Lucky House",
+  "description": "A Feng Shui and Saju analysis web application using AI Vision.",
+  "requestFramePermissions": [
+    "camera",
+    "geolocation"
+  ]
+}
