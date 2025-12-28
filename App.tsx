@@ -91,36 +91,53 @@ const LocationPicker = ({ onLocationSelect }: { onLocationSelect: (addr: string,
     }
   }, [isOpen, isMapLoaded]);
 
-  // Address Search Handler
-  const handleAddressSearch = async (e?: React.FormEvent) => {
+  // Address Search Handler (Updated to use Naver Geocoder)
+  const handleAddressSearch = (e?: React.FormEvent) => {
       e?.preventDefault();
       if (!searchQuery.trim()) return;
 
-      setIsSearching(true);
-      try {
-          // Use OpenStreetMap Nominatim API
-          const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}`);
-          const data = await response.json();
+      // Check if Naver Maps and Geocoder are loaded
+      if (!window.naver || !window.naver.maps || !window.naver.maps.Service) {
+          alert("지도 서비스가 아직 로드되지 않았습니다. 잠시 후 다시 시도해주세요.");
+          return;
+      }
 
-          if (data && data.length > 0) {
-              const { lat, lon } = data[0];
-              const newLat = parseFloat(lat);
-              const newLng = parseFloat(lon);
-              
-              if (mapInstance.current && window.naver) {
-                  const newCenter = new window.naver.maps.LatLng(newLat, newLng);
-                  mapInstance.current.setCenter(newCenter);
-                  markerInstance.current.setPosition(newCenter);
-                  setTempCoords({ lat: newLat, lng: newLng });
+      setIsSearching(true);
+      
+      try {
+          // Use Naver Geocoding API
+          window.naver.maps.Service.geocode({
+              query: searchQuery
+          }, (status: any, response: any) => {
+              setIsSearching(false);
+
+              if (status !== window.naver.maps.Service.Status.OK) {
+                  alert('검색 중 오류가 발생했습니다.');
+                  return;
               }
-          } else {
-              alert("주소를 찾을 수 없습니다. 도로명 주소를 정확히 입력해주세요.");
-          }
+
+              const result = response.v2;
+              const items = result.addresses;
+
+              if (items.length > 0) {
+                  const item = items[0];
+                  const newLat = parseFloat(item.y);
+                  const newLng = parseFloat(item.x);
+                  
+                  if (mapInstance.current) {
+                      const newCenter = new window.naver.maps.LatLng(newLat, newLng);
+                      mapInstance.current.setCenter(newCenter);
+                      markerInstance.current.setPosition(newCenter);
+                      setTempCoords({ lat: newLat, lng: newLng });
+                  }
+              } else {
+                  alert("주소를 찾을 수 없습니다. 도로명 주소를 정확히 입력해주세요.");
+              }
+          });
       } catch (err) {
           console.error("Search failed", err);
-          alert("검색 중 오류가 발생했습니다.");
-      } finally {
           setIsSearching(false);
+          alert("검색 중 오류가 발생했습니다.");
       }
   };
 
@@ -251,8 +268,12 @@ export default function App() {
 
     if (clientId && !window.naver) {
       const script = document.createElement('script');
-      script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpClientId=${clientId}`;
+      // Updated: oapi -> openapi and added &submodules=geocoder
+      script.src = `https://openapi.map.naver.com/openapi/v3/maps.js?ncpClientId=${clientId}&submodules=geocoder`;
       script.async = true;
+      script.onload = () => {
+          console.log("Naver Maps loaded with Geocoder");
+      };
       document.head.appendChild(script);
     }
   }, []);
