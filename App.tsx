@@ -26,7 +26,7 @@ const DIRECTIONS = [
   { value: 'SW', label: '남서향' },
   { value: 'NW', label: '북서향' },
   { value: 'NE', label: '북동향' },
-  { value: 'UNKNOWN', label: '모름' }, // Added Unknown option
+  { value: 'UNKNOWN', label: '모름' }, 
 ];
 
 const TESTIMONIALS = [
@@ -94,12 +94,12 @@ const LoadingScreen = () => {
     );
 };
 
-// 2. Liquid Glass Hexagon Radar
+// 2. Hexagon Radar
 const HexagonRadar = ({ data }: { data: CompatibilityDetail[] }) => {
     const [selectedMetric, setSelectedMetric] = useState<CompatibilityDetail | null>(null);
-    const size = 200; // Slightly smaller for mobile
+    const size = 200; 
     const center = size / 2;
-    const radius = 60; // Reduced radius to make room for external labels
+    const radius = 60; 
     const sides = 6;
     
     const getPoints = (r: number) => {
@@ -126,48 +126,23 @@ const HexagonRadar = ({ data }: { data: CompatibilityDetail[] }) => {
                         <stop offset="100%" stopColor="rgba(184,147,77,0.3)" />
                     </linearGradient>
                 </defs>
-                
-                {/* Background Grid */}
                 <polygon points={getPoints(radius)} fill="rgba(255,255,255,0.03)" stroke="rgba(226,194,117,0.1)" strokeWidth="1" />
                 <polygon points={getPoints(radius * 0.66)} fill="none" stroke="rgba(226,194,117,0.05)" strokeWidth="1" />
-                
-                {/* Data Shape */}
-                <polygon 
-                    points={polygonPoints} 
-                    fill="url(#liquidGold)" 
-                    stroke="#E2C275" 
-                    strokeWidth="2" 
-                    className="transition-all duration-1000 ease-out"
-                />
-                
-                {/* Points */}
-                {dataPoints.map((p, i) => (
-                    <circle key={i} cx={p.x} cy={p.y} r="2" fill="white" />
-                ))}
+                <polygon points={polygonPoints} fill="url(#liquidGold)" stroke="#E2C275" strokeWidth="2" className="transition-all duration-1000 ease-out"/>
+                {dataPoints.map((p, i) => (<circle key={i} cx={p.x} cy={p.y} r="2" fill="white" />))}
             </svg>
-            
-            {/* Labels - Positioned Outside */}
             {data.map((d, i) => {
                 const angle = (Math.PI / 180) * (i * (360 / sides) - 90);
-                // Push labels far out so they don't overlap with score points
                 const labelR = radius + 35; 
                 const x = center + labelR * Math.cos(angle);
                 const y = center + labelR * Math.sin(angle);
-                
                 return (
-                    <div 
-                        key={i} 
-                        onClick={() => setSelectedMetric(d)}
-                        className="absolute flex flex-col items-center justify-center transform -translate-x-1/2 -translate-y-1/2 cursor-pointer z-10" 
-                        style={{ left: x, top: y }}
-                    >
+                    <div key={i} onClick={() => setSelectedMetric(d)} className="absolute flex flex-col items-center justify-center transform -translate-x-1/2 -translate-y-1/2 cursor-pointer z-10" style={{ left: x, top: y }}>
                         <span className="text-[11px] text-gray-300 font-bold whitespace-nowrap shadow-black drop-shadow-md">{d.label}</span>
                         <span className="text-[#E2C275] text-[10px] font-bold bg-[#050B18]/80 px-1 rounded-sm border border-[#E2C275]/30">{d.score}</span>
                     </div>
                 );
             })}
-
-            {/* Glass Bubble Tooltip */}
             {selectedMetric && (
                 <div className="absolute inset-0 z-20 flex items-center justify-center animate-in fade-in zoom-in duration-200" onClick={() => setSelectedMetric(null)}>
                     <div className="bg-[#050B18]/90 backdrop-blur-xl border border-[#E2C275]/50 p-4 rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.8)] text-center max-w-[90%] relative">
@@ -439,7 +414,7 @@ export default function App() {
         );
         setResult(res);
         setAppState('RESULT');
-    }, 3200); // Extended loading time for effect
+    }, 3200); 
   };
 
   const handleShare = async () => {
@@ -487,12 +462,12 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#050B18] text-[#E2C275] font-sans overflow-x-hidden selection:bg-[#E2C275] selection:text-[#050B18]">
-      <main className="relative z-10 max-w-md mx-auto min-h-screen flex flex-col">
+    <div className="h-[100dvh] bg-[#050B18] text-[#E2C275] font-sans overflow-hidden selection:bg-[#E2C275] selection:text-[#050B18]">
+      <main className="relative z-10 max-w-md mx-auto h-full flex flex-col">
         
         {/* Header - Branding Logo Updated */}
         {(appState !== 'LANDING' && appState !== 'DISCLAIMER_CHECK') && (
-            <div className="px-5 pt-4 pb-2 sticky top-0 bg-[#050B18]/95 backdrop-blur-md z-40">
+            <div className="px-5 pt-4 pb-2 bg-[#050B18]/95 backdrop-blur-md z-40 flex-shrink-0">
                 <div className="flex justify-between items-center mb-2">
                     <button onClick={resetApp} className="text-gray-400 hover:text-white"><Compass className="w-5 h-5" /></button>
                     {/* Logo Area */}
@@ -519,7 +494,7 @@ export default function App() {
 
         {/* 1. Landing */}
         {appState === 'LANDING' && (
-            <div className="flex-1 flex flex-col justify-center px-6 animate-in fade-in duration-1000 relative">
+            <div className="flex-1 flex flex-col justify-center px-6 animate-in fade-in duration-1000 relative overflow-y-auto">
                 <div className="mb-8 text-center">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E2C275]/10 border border-[#E2C275]/30 text-[#E2C275] text-[10px] font-bold mb-4 tracking-wide backdrop-blur-md">
                         <Sparkles className="w-3 h-3" /> 국내 최초 풍수 AI
@@ -542,7 +517,7 @@ export default function App() {
                     >
                         우리 집 기운 확인하기 <ArrowRight className="w-6 h-6" />
                     </button>
-                    <div className="text-center space-y-2 mt-4">
+                    <div className="text-center space-y-2 mt-4 pb-8">
                         <p className="text-[10px] text-gray-600">30년 경력 풍수 전문가 자문 알고리즘 적용</p>
                     </div>
                 </div>
@@ -551,8 +526,8 @@ export default function App() {
 
         {/* Disclaimer & Surveys */}
         {appState === 'DISCLAIMER_CHECK' && (
-            <div className="flex-1 flex flex-col justify-center px-6 animate-in zoom-in-95 duration-300 bg-black/40 backdrop-blur-sm">
-                 <div className="bg-[#0A1224] border border-[#E2C275]/20 p-8 rounded-3xl shadow-2xl max-w-sm mx-auto w-full">
+            <div className="flex-1 flex flex-col justify-center px-6 animate-in zoom-in-95 duration-300 bg-black/40 backdrop-blur-sm overflow-y-auto">
+                 <div className="bg-[#0A1224] border border-[#E2C275]/20 p-8 rounded-3xl shadow-2xl max-w-sm mx-auto w-full my-auto">
                      <AlertTriangle className="w-10 h-10 text-[#E2C275] mx-auto mb-4" />
                      <h2 className="text-xl font-bold text-white text-center mb-2">잠깐! 확인해주세요</h2>
                      <p className="text-gray-400 text-xs leading-relaxed text-center mb-6">
@@ -567,38 +542,45 @@ export default function App() {
         )}
 
         {appState === 'SURVEY_IDENTITY' && (
-            <div className="flex-1 px-5 pt-2 pb-6 flex flex-col animate-in slide-in-from-right-8 duration-500">
-                <h2 className="text-xl font-bold text-white mb-6">누구의 집을 볼까요?</h2>
-                <div className="space-y-4 flex-1">
-                    {/* Goal Selection Added */}
-                    <div>
-                        <label className="block text-xs font-bold text-[#E2C275] mb-2">분석 목적</label>
-                        <div className="grid grid-cols-2 gap-2 bg-[#151c32] p-1 rounded-xl">
-                            <button onClick={() => setFormData({...formData, moveStatus: 'living'})} className={`py-3 rounded-lg text-sm font-bold transition-all ${formData.moveStatus === 'living' ? 'bg-[#E2C275] text-[#050B18] shadow-lg' : 'text-gray-400 hover:text-white'}`}>지금 사는 집</button>
-                            <button onClick={() => setFormData({...formData, moveStatus: 'moving'})} className={`py-3 rounded-lg text-sm font-bold transition-all ${formData.moveStatus === 'moving' ? 'bg-[#E2C275] text-[#050B18] shadow-lg' : 'text-gray-400 hover:text-white'}`}>이사 갈 집</button>
+            <div className="flex-1 flex flex-col h-full animate-in slide-in-from-right-8 duration-500">
+                <div className="flex-1 overflow-y-auto px-5 pt-2">
+                    <h2 className="text-xl font-bold text-white mb-6">누구의 집을 볼까요?</h2>
+                    <div className="space-y-4">
+                        {/* Goal Selection Added */}
+                        <div>
+                            <label className="block text-xs font-bold text-[#E2C275] mb-2">분석 목적</label>
+                            <div className="grid grid-cols-2 gap-2 bg-[#151c32] p-1 rounded-xl">
+                                <button onClick={() => setFormData({...formData, moveStatus: 'living'})} className={`py-3 rounded-lg text-sm font-bold transition-all ${formData.moveStatus === 'living' ? 'bg-[#E2C275] text-[#050B18] shadow-lg' : 'text-gray-400 hover:text-white'}`}>지금 사는 집</button>
+                                <button onClick={() => setFormData({...formData, moveStatus: 'moving'})} className={`py-3 rounded-lg text-sm font-bold transition-all ${formData.moveStatus === 'moving' ? 'bg-[#E2C275] text-[#050B18] shadow-lg' : 'text-gray-400 hover:text-white'}`}>이사 갈 집</button>
+                            </div>
                         </div>
-                    </div>
-                    <div><label className="block text-xs font-bold text-[#E2C275] mb-1">이름</label><input type="text" className="w-full bg-[#151c32] rounded-xl p-3 text-white outline-none" placeholder="홍길동" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} /></div>
-                    <div>
-                        <label className="block text-xs font-bold text-[#E2C275] mb-1">성별</label>
-                        <div className="flex gap-2">
-                            {['male', 'female'].map((g) => (<button key={g} onClick={() => setFormData({...formData, gender: g as any})} className={`flex-1 py-3 rounded-xl font-bold text-sm border ${formData.gender === g ? 'bg-[#E2C275] text-[#050B18] border-[#E2C275]' : 'bg-[#151c32] text-gray-400 border-transparent'}`}>{g === 'male' ? '남성' : '여성'}</button>))}
+                        <div><label className="block text-xs font-bold text-[#E2C275] mb-1">이름</label><input type="text" className="w-full bg-[#151c32] rounded-xl p-3 text-white outline-none" placeholder="홍길동" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} /></div>
+                        <div>
+                            <label className="block text-xs font-bold text-[#E2C275] mb-1">성별</label>
+                            <div className="flex gap-2">
+                                {['male', 'female'].map((g) => (<button key={g} onClick={() => setFormData({...formData, gender: g as any})} className={`flex-1 py-3 rounded-xl font-bold text-sm border ${formData.gender === g ? 'bg-[#E2C275] text-[#050B18] border-[#E2C275]' : 'bg-[#151c32] text-gray-400 border-transparent'}`}>{g === 'male' ? '남성' : '여성'}</button>))}
+                            </div>
                         </div>
+                        <div><label className="block text-xs font-bold text-[#E2C275] mb-1">생년월일</label><input type="date" className="w-full bg-[#151c32] rounded-xl p-3 text-white outline-none" value={formData.birthDate} onChange={e => setFormData({...formData, birthDate: e.target.value})} /></div>
                     </div>
-                    <div><label className="block text-xs font-bold text-[#E2C275] mb-1">생년월일</label><input type="date" className="w-full bg-[#151c32] rounded-xl p-3 text-white outline-none" value={formData.birthDate} onChange={e => setFormData({...formData, birthDate: e.target.value})} /></div>
                 </div>
-                <button onClick={() => setAppState('SURVEY_LOCATION')} disabled={!formData.name || !formData.gender || !formData.birthDate} className="w-full py-4 bg-[#E2C275] text-[#050B18] font-bold rounded-xl disabled:opacity-30 mt-4">다음</button>
+                {/* Fixed Bottom Button Area */}
+                <div className="p-4 mt-auto bg-[#050B18]">
+                    <button onClick={() => setAppState('SURVEY_LOCATION')} disabled={!formData.name || !formData.gender || !formData.birthDate} className="w-full py-4 bg-[#E2C275] text-[#050B18] font-bold rounded-xl disabled:opacity-30">다음</button>
+                </div>
             </div>
         )}
 
         {appState === 'SURVEY_LOCATION' && (
-             <div className="flex-1 px-5 pt-2 pb-6 flex flex-col animate-in slide-in-from-right-8 duration-500">
-                <h2 className="text-xl font-bold text-white mb-6">어디를 분석할까요?</h2>
-                <div className="flex-1 space-y-4">
-                    <LocationPicker onLocationSelect={(addr, coords) => setFormData({...formData, address: addr, coordinates: coords})} />
-                    {!formData.address && <div className="p-3 rounded-xl bg-blue-900/20 border border-blue-500/30 text-blue-200 text-xs">정확한 주소는 지기(땅의 기운) 분석에 필수입니다.</div>}
+             <div className="flex-1 flex flex-col h-full animate-in slide-in-from-right-8 duration-500">
+                <div className="flex-1 overflow-y-auto px-5 pt-2">
+                    <h2 className="text-xl font-bold text-white mb-6">어디를 분석할까요?</h2>
+                    <div className="space-y-4">
+                        <LocationPicker onLocationSelect={(addr, coords) => setFormData({...formData, address: addr, coordinates: coords})} />
+                        {!formData.address && <div className="p-3 rounded-xl bg-blue-900/20 border border-blue-500/30 text-blue-200 text-xs">정확한 주소는 지기(땅의 기운) 분석에 필수입니다.</div>}
+                    </div>
                 </div>
-                <div className="flex gap-2 mt-4">
+                <div className="p-4 mt-auto bg-[#050B18] flex gap-2">
                      <button onClick={() => setAppState('SURVEY_IDENTITY')} className="w-1/3 py-4 bg-[#151c32] text-gray-400 font-bold rounded-xl">이전</button>
                      <button onClick={() => setAppState('SURVEY_DETAILS')} className="w-2/3 py-4 bg-[#E2C275] text-[#050B18] font-bold rounded-xl">{formData.address ? "위치 확인" : "건너뛰기"}</button>
                 </div>
@@ -606,20 +588,22 @@ export default function App() {
         )}
 
         {appState === 'SURVEY_DETAILS' && (
-             <div className="flex-1 px-5 pt-2 pb-6 flex flex-col animate-in slide-in-from-right-8 duration-500">
-                <h2 className="text-xl font-bold text-white mb-6">마지막 확인입니다.</h2>
-                <div className="flex-1 space-y-6">
-                    <div>
-                        <label className="block text-xs font-bold text-[#E2C275] mb-2">현관 방향</label>
-                        {/* 3 columns grid for better fit with unknown option */}
-                        <div className="grid grid-cols-3 gap-2">
-                            {DIRECTIONS.map(d => (
-                                <button key={d.value} onClick={() => setFormData({...formData, houseDirection: d.value})} className={`py-3 rounded-xl text-sm font-bold border ${formData.houseDirection === d.value ? 'bg-[#E2C275] text-[#050B18] border-[#E2C275]' : 'bg-[#151c32] text-gray-400 border-transparent'} ${d.value === 'UNKNOWN' ? 'col-span-3 border-dashed border-gray-600' : ''}`}>{d.label}</button>
-                            ))}
+             <div className="flex-1 flex flex-col h-full animate-in slide-in-from-right-8 duration-500">
+                <div className="flex-1 overflow-y-auto px-5 pt-2">
+                    <h2 className="text-xl font-bold text-white mb-6">마지막 확인입니다.</h2>
+                    <div className="space-y-6">
+                        <div>
+                            <label className="block text-xs font-bold text-[#E2C275] mb-2">현관 방향</label>
+                            {/* 3 columns grid for better fit with unknown option */}
+                            <div className="grid grid-cols-3 gap-2">
+                                {DIRECTIONS.map(d => (
+                                    <button key={d.value} onClick={() => setFormData({...formData, houseDirection: d.value})} className={`py-3 rounded-xl text-sm font-bold border ${formData.houseDirection === d.value ? 'bg-[#E2C275] text-[#050B18] border-[#E2C275]' : 'bg-[#151c32] text-gray-400 border-transparent'} ${d.value === 'UNKNOWN' ? 'col-span-3 border-dashed border-gray-600' : ''}`}>{d.label}</button>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div className="flex gap-2 mt-4">
+                <div className="p-4 mt-auto bg-[#050B18] flex gap-2">
                     <button onClick={() => setAppState('SURVEY_LOCATION')} className="w-1/3 py-4 bg-[#151c32] text-gray-400 font-bold rounded-xl">이전</button>
                     <button onClick={handleAnalyze} className="w-2/3 py-4 bg-gradient-to-r from-[#B8934D] via-[#E2C275] to-[#B8934D] text-[#050B18] font-black text-lg rounded-xl shadow-[0_0_20px_rgba(226,194,117,0.3)]">분석하기</button>
                 </div>
@@ -632,7 +616,7 @@ export default function App() {
 
         {/* Result View - Optimized for Mobile */}
         {appState === 'RESULT' && result && (
-            <div className="flex-1 animate-in slide-in-from-bottom-8 duration-700 pb-10">
+            <div className="flex-1 animate-in slide-in-from-bottom-8 duration-700 overflow-y-auto pb-10">
                 
                 {/* Result Hero - Compressed Padding */}
                 <div className="relative bg-[#0A1224] pt-4 pb-6 px-4 rounded-b-[2rem] shadow-2xl z-20 border-b border-[#E2C275]/10 overflow-visible">

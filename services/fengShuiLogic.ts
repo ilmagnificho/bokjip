@@ -29,59 +29,81 @@ const getNeededElement = (userEl: FiveElement): FiveElement => {
   }
 };
 
+// --- 10 Feng Shui Items Pool ---
+const ITEM_POOL: RecommendationItem[] = [
+  { id: 1, name: "천연 대나무 숯", effect: "지기(땅) 정화", description: "습기와 탁한 기운을 흡착하여 터를 명당으로 바꿉니다.", searchKeyword: "천연 제습 숯", tag: "필수비보" },
+  { id: 2, name: "국산 붉은 팥", effect: "액운 차단", description: "현관이나 베란다 구석에 두어 잡귀의 침입을 막습니다.", searchKeyword: "국산 붉은 팥", tag: "전통비책" },
+  { id: 3, name: "황동 풍경 종", effect: "기운 순환", description: "맑은 소리가 정체된 공기를 깨우고 생기를 불어넣습니다.", searchKeyword: "현관 황동 풍경", tag: "순환개선" },
+  { id: 4, name: "장 스탠드 (웜톤)", effect: "양기(Sun) 보충", description: "부족한 햇빛을 대신하여 집안의 음기를 태워 없앱니다.", searchKeyword: "인테리어 장스탠드", tag: "양기충전" },
+  { id: 5, name: "크리스탈 썬캐쳐", effect: "기운 확산", description: "빛을 산란시켜 집안 구석구석 좋은 기운을 퍼뜨립니다.", searchKeyword: "크리스탈 썬캐쳐", tag: "생기증폭" },
+  { id: 6, name: "황금 거북이/두꺼비", effect: "재물운(Metal) 강화", description: "재물이 들어오는 길목에 두어 금전운을 꽉 잡습니다.", searchKeyword: "풍수 황금 두꺼비", tag: "재물운" },
+  { id: 7, name: "해바라기 액자", effect: "화(Fire) 기운", description: "강렬한 태양의 기운이 성공과 명예를 가져다줍니다.", searchKeyword: "해바라기 그림 액자", tag: "성공운" },
+  { id: 8, name: "실내 미니 분수", effect: "수(Water) 기운", description: "흐르는 물은 곧 재물의 회전을 의미합니다.", searchKeyword: "탁상용 분수대", tag: "금전유통" },
+  { id: 9, name: "몬스테라/여인초", effect: "목(Wood) 기운", description: "살아있는 식물의 생명력이 집안에 활력을 줍니다.", searchKeyword: "대형 공기정화 식물", tag: "생기부여" },
+  { id: 10, name: "히말라야 소금단지", effect: "나쁜 기운 중화", description: "소금의 정화 능력이 흉한 기운을 흡수합니다.", searchKeyword: "풍수 소금 항아리", tag: "액막이" },
+];
+
 const getStrategicItems = (
   radarData: CompatibilityDetail[], 
   neededEl: FiveElement
 ): RecommendationItem[] => {
-  const items: RecommendationItem[] = [];
-  const mkItem = (id: number, name: string, effect: string, desc: string, kw: string, tag: string) => ({ id, name, effect, description: desc, searchKeyword: kw, tag });
+  const selectedItems: RecommendationItem[] = [];
+  const selectedIds = new Set<number>();
+
+  const add = (id: number) => {
+    if (!selectedIds.has(id)) {
+      selectedIds.add(id);
+      selectedItems.push(ITEM_POOL.find(i => i.id === id)!);
+    }
+  };
 
   const earthScore = radarData.find(d => d.label === '지기(땅)')?.score || 50;
   const flowScore = radarData.find(d => d.label === '통풍')?.score || 50;
   const lightScore = radarData.find(d => d.label === '채광')?.score || 50;
 
-  if (earthScore < 60) {
-    items.push(mkItem(1, "천연 대나무 숯", "탁한 지기 정화", "지반의 습기와 나쁜 파장을 흡착하여 터를 명당으로 바꿉니다. 이사 전 입주 청소 시 반드시 비치하세요.", "천연 제습 숯", "필수비보"));
-    items.push(mkItem(2, "국산 붉은 팥", "액운 차단", "현관이나 베란다 구석에 두어 잡귀의 침입을 막는 전통 비책입니다.", "국산 붉은 팥", "강력추천"));
-  }
-
-  if (flowScore < 60) {
-    items.push(mkItem(3, "황동 풍경 종", "기운 순환 유도", "맑은 금속성 소리가 정체된 공기를 깨우고 생기를 불어넣습니다. 현관문에 달아두세요.", "현관 풍경 종", "순환개선"));
-  }
-
+  // 1. Weakness Based Recommendations (Priority)
+  if (earthScore < 60) add(1); // Charcoal
+  if (flowScore < 60) add(3); // Wind Chime
   if (lightScore < 60) {
-    items.push(mkItem(4, "장 스탠드 (3000K)", "양기(Sun) 보충", "해를 대신하는 조명입니다. 거실 모서리의 음기를 태워 없앱니다.", "인테리어 장스탠드 웜톤", "양기충전"));
+      if (Math.random() > 0.5) add(4); // Lamp
+      else add(5); // Suncatcher
   }
 
-  if (items.length < 3) {
+  // 2. Element Based Recommendations
+  if (selectedItems.length < 3) {
     switch (neededEl) {
-      case FiveElement.Water:
-        items.push(mkItem(5, "실내 미니 분수", "재물운(Water) 공급", "물은 곧 재물입니다. 끊임없이 흐르는 물로 금전운을 회전시키세요.", "실내 분수대", "금전운"));
+      case FiveElement.Water: add(8); break; // Fountain
+      case FiveElement.Fire: 
+        if (Math.random() > 0.5) add(7); // Sunflower
+        else add(4); // Lamp
         break;
-      case FiveElement.Fire:
-        items.push(mkItem(6, "해바라기 그림 (유화)", "화(Fire)의 기운 증폭", "강렬한 태양의 기운이 성공과 명예를 가져다줍니다. 현관에서 보이는 곳에 두세요.", "해바라기 액자", "성공운"));
+      case FiveElement.Metal: 
+        if (Math.random() > 0.5) add(6); // Gold Toad
+        else add(3); // Wind Chime
         break;
-      case FiveElement.Metal:
-        items.push(mkItem(7, "황동(Brass) 오브제", "결단력(Metal) 강화", "차가운 이성과 결단력을 높여주며, 흩어지는 기운을 잡아줍니다.", "황동 인테리어 소품", "관운상승"));
+      case FiveElement.Wood: add(9); break; // Plant
+      case FiveElement.Earth: 
+        if (Math.random() > 0.5) add(10); // Salt
+        else add(1); // Charcoal
         break;
-      case FiveElement.Wood:
-        items.push(mkItem(8, "몬스테라/여인초", "성장(Wood) 에너지", "살아있는 생명이 뿜어내는 기운이 집안에 활력을 줍니다.", "대형 공기정화 식물", "생기부여"));
-        break;
-      default:
-        items.push(mkItem(9, "크리스탈 썬캐쳐", "기운 확산", "빛을 산란시켜 집안 구석구석 좋은 기운(Qi)을 퍼뜨립니다.", "썬캐쳐", "기운증폭"));
     }
   }
 
-  return items.slice(0, 3);
+  // 3. Fillers (General Good Luck)
+  if (selectedItems.length < 3) add(2); // Red Beans (General Protection)
+  if (selectedItems.length < 3) add(10); // Salt (General Protection)
+  if (selectedItems.length < 3) add(5); // Suncatcher (General Good)
+
+  return selectedItems.slice(0, 3);
 };
 
 export const analyzeFortune = async (
   name: string, 
   birthDateStr: string, 
-  houseDirection: string,
+  houseDirection: string, 
   coordinates: Coordinates | null,
   hasImage: boolean,
-  moveStatus: MoveStatus // New parameter
+  moveStatus: MoveStatus
 ): Promise<AnalysisResult> => {
   const birthDate = new Date(birthDateStr);
   const month = birthDate.getMonth() + 1;
@@ -103,7 +125,6 @@ export const analyzeFortune = async (
   if (coordinates) {
     const hash = getGeoHash(coordinates.lat, coordinates.lng);
     earthScore = 40 + (hash % 50); // 40 ~ 90
-    // Simulate terrain analysis based on hash
     const terrains = ["배산임수형(명당)", "평지형(안정)", "골바람형(주의)", "습지형(보완필요)", "매립지형(지기약함)"];
     terrainType = terrains[hash % terrains.length];
   } else {
