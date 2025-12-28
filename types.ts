@@ -23,11 +23,12 @@ export interface UserData {
   roomImage: File | null;
 }
 
-// New: Compatibility Radar Chart Data
+// Compatibility Radar Chart Data
 export interface CompatibilityDetail {
   label: string;
   score: number; // 0-100
   description: string; // Analysis text for this specific metric
+  detailQuote: string; // New: Specific advice for the tooltip
 }
 
 export interface AnalysisResult {
@@ -41,14 +42,21 @@ export interface AnalysisResult {
   mainCopy: string; 
   subCopy: string;
   
+  // Explanation of location logic
+  locationAnalysis: string; 
+
   // Paid Report Content
   premiumReport: {
     title: string;
-    content: string[]; // List of detailed insights
-    price: string; // e.g., "3,900원"
+    price: string;
+    sections: {
+      title: string;
+      icon: string;
+      content: string[];
+    }[];
   };
 
-  // Item Recommendations connected to logic
+  // Item Recommendations
   items: RecommendationItem[];
 }
 
@@ -62,7 +70,7 @@ export enum HouseTier {
 export interface RecommendationItem {
   id: number;
   name: string;
-  effect: string; // "Why" logic: e.g. "Low Water Energy -> Restores Balance"
+  effect: string; 
   description: string;
   searchKeyword: string; 
   tag: string; 
