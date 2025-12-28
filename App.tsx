@@ -3,9 +3,9 @@ import {
   Compass, MapPin, Sparkles, RefreshCw, Share2, 
   ShoppingBag, Camera, CheckCircle2, 
   AlertTriangle, Lock, Search, Map as MapIcon, X,
-  ChevronRight, ArrowRight, Ghost, Star, ChevronLeft, Unlock, ShieldCheck, TrendingUp, CreditCard, Bug, Info, MousePointerClick, Edit2, ExternalLink
+  ChevronRight, ArrowRight, Ghost, Star, ChevronLeft, Unlock, ShieldCheck, TrendingUp, CreditCard, Bug, Info, MousePointerClick, Edit2, ExternalLink, HelpCircle
 } from 'lucide-react';
-import { UserData, AnalysisResult, Coordinates, HouseTier, CompatibilityDetail } from './types';
+import { UserData, AnalysisResult, Coordinates, HouseTier, CompatibilityDetail, MoveStatus } from './types';
 import { analyzeFortune } from './services/fengShuiLogic';
 
 declare global {
@@ -26,6 +26,7 @@ const DIRECTIONS = [
   { value: 'SW', label: '남서향' },
   { value: 'NW', label: '북서향' },
   { value: 'NE', label: '북동향' },
+  { value: 'UNKNOWN', label: '모름' }, // Added Unknown option
 ];
 
 const TESTIMONIALS = [
@@ -52,7 +53,48 @@ const getClientId = () => {
 
 // --- Components ---
 
-// 1. Liquid Glass Hexagon Radar
+// 1. Loading Screen Component
+const LoadingScreen = () => {
+    const [step, setStep] = useState(0);
+    const steps = [
+        "위성 GPS 좌표 수신 중...",
+        "해당 지역 수맥 및 지기(Earth Energy) 분석 중...",
+        "사용자 사주 오행 대조 중...",
+        "최종 맞춤형 리포트 생성 중..."
+    ];
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setStep(prev => (prev < steps.length - 1 ? prev + 1 : prev));
+        }, 800);
+        return () => clearInterval(interval);
+    }, []);
+
+    return (
+        <div className="flex-1 flex flex-col items-center justify-center animate-in fade-in duration-700 px-6 text-center">
+            <div className="relative w-32 h-32 mb-8">
+                {/* Outer Ring */}
+                <div className="absolute inset-0 border-4 border-[#E2C275]/20 rounded-full" />
+                {/* Spinning Ring */}
+                <div className="absolute inset-0 border-t-4 border-[#E2C275] rounded-full animate-spin" />
+                {/* Inner Pulse */}
+                <div className="absolute inset-4 bg-[#E2C275]/10 rounded-full animate-pulse-slow" />
+                <Compass className="absolute inset-0 m-auto w-12 h-12 text-[#E2C275] animate-bounce" style={{ animationDuration: '2s' }} />
+            </div>
+            
+            <h2 className="text-xl font-bold text-white mb-2">{steps[step]}</h2>
+            <div className="w-64 h-1.5 bg-gray-800 rounded-full overflow-hidden mt-4">
+                <div 
+                    className="h-full bg-[#E2C275] transition-all duration-500 ease-out" 
+                    style={{ width: `${((step + 1) / steps.length) * 100}%` }} 
+                />
+            </div>
+            <p className="text-gray-500 text-xs mt-3">30년 경력 풍수 알고리즘 가동 중</p>
+        </div>
+    );
+};
+
+// 2. Liquid Glass Hexagon Radar
 const HexagonRadar = ({ data }: { data: CompatibilityDetail[] }) => {
     const [selectedMetric, setSelectedMetric] = useState<CompatibilityDetail | null>(null);
     const size = 200; // Slightly smaller for mobile
@@ -140,7 +182,7 @@ const HexagonRadar = ({ data }: { data: CompatibilityDetail[] }) => {
     );
 };
 
-// 2. Testimonial
+// 3. Testimonial
 const TestimonialCarousel = () => {
     const [index, setIndex] = useState(0);
     useEffect(() => {
@@ -163,7 +205,7 @@ const TestimonialCarousel = () => {
     );
 };
 
-// 3. Location Picker
+// 4. Location Picker
 const LocationPicker = ({ onLocationSelect }: { onLocationSelect: (addr: string, coords: Coordinates | null) => void }) => {
   const [isOpen, setIsOpen] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
@@ -352,7 +394,7 @@ export default function App() {
   
   const [formData, setFormData] = useState<UserData>({
     name: '', gender: null, calendarType: 'solar', birthDate: '', birthTime: '',
-    address: '', coordinates: null, houseDirection: 'S', roomImage: null
+    address: '', coordinates: null, houseDirection: 'S', roomImage: null, moveStatus: 'living'
   });
   const [result, setResult] = useState<AnalysisResult | null>(null);
 
@@ -379,7 +421,7 @@ export default function App() {
             mainCopy: `${name}님의 풍수 점수는 ${score}점입니다.`,
             subCopy: "복집 AI가 분석한 결과입니다.",
             locationAnalysis: "공유된 위치 데이터 분석",
-            premiumReport: { title: "", price: "", sections: [] },
+            premiumReport: { title: "", price: "", originalPrice: "", sections: [] },
             items: []
         });
         setAppState('RESULT');
@@ -392,11 +434,12 @@ export default function App() {
         const res = await analyzeFortune(
             formData.name, formData.birthDate,
             DIRECTIONS.find(d => d.value === formData.houseDirection)?.label || '남향',
-            formData.coordinates, !!formData.roomImage
+            formData.coordinates, !!formData.roomImage,
+            formData.moveStatus
         );
         setResult(res);
         setAppState('RESULT');
-    }, 2000); // slightly faster loading
+    }, 3200); // Extended loading time for effect
   };
 
   const handleShare = async () => {
@@ -430,7 +473,7 @@ export default function App() {
     setResult(null);
     setIsPremiumUnlocked(false);
     setShowPaymentModal(false);
-    setFormData({ name: '', gender: null, calendarType: 'solar', birthDate: '', birthTime: '', address: '', coordinates: null, houseDirection: 'S', roomImage: null });
+    setFormData({ name: '', gender: null, calendarType: 'solar', birthDate: '', birthTime: '', address: '', coordinates: null, houseDirection: 'S', roomImage: null, moveStatus: 'living' });
     window.scrollTo(0,0);
   };
 
@@ -481,7 +524,6 @@ export default function App() {
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E2C275]/10 border border-[#E2C275]/30 text-[#E2C275] text-[10px] font-bold mb-4 tracking-wide backdrop-blur-md">
                         <Sparkles className="w-3 h-3" /> 국내 최초 풍수 AI
                     </div>
-                    {/* Main Copy Updated for Moving/Living Target */}
                     <h1 className="text-5xl font-black text-white leading-[1.1] mb-2 tracking-tight">
                         이사 갈 집?<br/> 
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#E2C275] via-[#F5E3B3] to-[#E2C275]">지금 사는 집?</span>
@@ -518,7 +560,6 @@ export default function App() {
                      </p>
                      <div className="space-y-2">
                         <button onClick={() => setAppState('SURVEY_IDENTITY')} className="w-full py-3 bg-[#E2C275] text-[#050B18] font-bold rounded-xl">네, 이해했습니다</button>
-                        {/* Exit Button Added */}
                         <button onClick={() => setAppState('LANDING')} className="w-full py-3 bg-[#151c32] text-gray-400 font-bold rounded-xl hover:text-white">나가기</button>
                      </div>
                  </div>
@@ -529,7 +570,15 @@ export default function App() {
             <div className="flex-1 px-5 pt-2 pb-6 flex flex-col animate-in slide-in-from-right-8 duration-500">
                 <h2 className="text-xl font-bold text-white mb-6">누구의 집을 볼까요?</h2>
                 <div className="space-y-4 flex-1">
-                    <div><label className="block text-xs font-bold text-[#E2C275] mb-1">이름</label><input type="text" className="w-full bg-[#151c32] rounded-xl p-3 text-white outline-none" placeholder="홍길동" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} autoFocus /></div>
+                    {/* Goal Selection Added */}
+                    <div>
+                        <label className="block text-xs font-bold text-[#E2C275] mb-2">분석 목적</label>
+                        <div className="grid grid-cols-2 gap-2 bg-[#151c32] p-1 rounded-xl">
+                            <button onClick={() => setFormData({...formData, moveStatus: 'living'})} className={`py-3 rounded-lg text-sm font-bold transition-all ${formData.moveStatus === 'living' ? 'bg-[#E2C275] text-[#050B18] shadow-lg' : 'text-gray-400 hover:text-white'}`}>지금 사는 집</button>
+                            <button onClick={() => setFormData({...formData, moveStatus: 'moving'})} className={`py-3 rounded-lg text-sm font-bold transition-all ${formData.moveStatus === 'moving' ? 'bg-[#E2C275] text-[#050B18] shadow-lg' : 'text-gray-400 hover:text-white'}`}>이사 갈 집</button>
+                        </div>
+                    </div>
+                    <div><label className="block text-xs font-bold text-[#E2C275] mb-1">이름</label><input type="text" className="w-full bg-[#151c32] rounded-xl p-3 text-white outline-none" placeholder="홍길동" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} /></div>
                     <div>
                         <label className="block text-xs font-bold text-[#E2C275] mb-1">성별</label>
                         <div className="flex gap-2">
@@ -562,9 +611,10 @@ export default function App() {
                 <div className="flex-1 space-y-6">
                     <div>
                         <label className="block text-xs font-bold text-[#E2C275] mb-2">현관 방향</label>
-                        <div className="grid grid-cols-2 gap-2">
-                            {DIRECTIONS.slice(0, 4).map(d => (
-                                <button key={d.value} onClick={() => setFormData({...formData, houseDirection: d.value})} className={`py-3 rounded-xl text-sm font-bold border ${formData.houseDirection === d.value ? 'bg-[#E2C275] text-[#050B18] border-[#E2C275]' : 'bg-[#151c32] text-gray-400 border-transparent'}`}>{d.label}</button>
+                        {/* 3 columns grid for better fit with unknown option */}
+                        <div className="grid grid-cols-3 gap-2">
+                            {DIRECTIONS.map(d => (
+                                <button key={d.value} onClick={() => setFormData({...formData, houseDirection: d.value})} className={`py-3 rounded-xl text-sm font-bold border ${formData.houseDirection === d.value ? 'bg-[#E2C275] text-[#050B18] border-[#E2C275]' : 'bg-[#151c32] text-gray-400 border-transparent'} ${d.value === 'UNKNOWN' ? 'col-span-3 border-dashed border-gray-600' : ''}`}>{d.label}</button>
                             ))}
                         </div>
                     </div>
@@ -577,13 +627,7 @@ export default function App() {
         )}
 
         {appState === 'LOADING' && (
-            <div className="flex-1 flex flex-col items-center justify-center animate-in fade-in duration-700 px-6 text-center">
-                <div className="relative w-24 h-24 mb-6">
-                    <div className="absolute inset-0 border-t-4 border-[#E2C275] rounded-full animate-spin" />
-                    <Compass className="absolute inset-0 m-auto w-8 h-8 text-[#E2C275]" />
-                </div>
-                <h2 className="text-xl font-bold text-white mb-1 animate-pulse">명당 기운을<br/>계산하고 있습니다...</h2>
-            </div>
+            <LoadingScreen />
         )}
 
         {/* Result View - Optimized for Mobile */}
@@ -643,17 +687,16 @@ export default function App() {
                                     </div>
                                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-[1px] z-10 p-6 text-center">
                                         <Lock className="w-8 h-8 text-[#E2C275] mb-2 animate-bounce" />
-                                        <h3 className="text-white font-bold text-base mb-1">상세 분석 & 이사/거주 솔루션</h3>
+                                        <h3 className="text-white font-bold text-base mb-1">상세 분석 & {formData.moveStatus === 'moving' ? '이사' : '거주'} 솔루션</h3>
                                         <p className="text-[11px] text-gray-400 mb-4 leading-relaxed">
                                             정밀 지형 분석, 가구 배치, 계약 조언 등<br/>
                                             3단 구성의 프리미엄 리포트를 확인하세요.
                                         </p>
-                                        {/* Price adjusted to 1900 KRW */}
                                         <button 
                                             onClick={() => setShowPaymentModal(true)} 
                                             className="w-full py-3 bg-gradient-to-r from-[#B8934D] to-[#E2C275] text-[#050B18] font-black rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_0_20px_rgba(226,194,117,0.4)] text-sm"
                                         >
-                                            <span className="line-through opacity-50 mr-2 text-xs">15,000원</span>
+                                            <span className="line-through opacity-50 mr-2 text-xs">{result.premiumReport.originalPrice}</span>
                                             {result.premiumReport.price}에 잠금 해제
                                         </button>
                                     </div>
@@ -737,16 +780,16 @@ export default function App() {
                             <ShieldCheck className="w-6 h-6 text-[#E2C275]" />
                         </div>
                         <div>
-                            <p className="text-gray-400 text-xs line-through opacity-50">15,000원</p>
+                            <p className="text-gray-400 text-xs line-through opacity-50">3,900원</p>
                             <p className="text-white font-bold text-lg">복집 프리미엄 리포트</p>
                         </div>
-                        <div className="ml-auto text-xl font-black text-[#E2C275] animate-pulse">1,900원</div>
+                        <div className="ml-auto text-xl font-black text-[#E2C275] animate-pulse">1,500원</div>
                     </div>
                     
                     <ul className="text-xs text-gray-400 mb-6 space-y-2 bg-white/5 p-4 rounded-lg">
                         <li className="flex gap-2">✅ <span className="text-gray-300">정밀 지형 분석 & 계약 조언</span></li>
                         <li className="flex gap-2">✅ <span className="text-gray-300">내 사주 맞춤형 침대/가구 배치도</span></li>
-                        <li className="flex gap-2">✅ <span className="text-gray-300">이사 전 꼭 해야 할 비보(裨補) 솔루션</span></li>
+                        <li className="flex gap-2">✅ <span className="text-gray-300">흉살을 막는 비보(裨補) 솔루션</span></li>
                     </ul>
 
                     <button onClick={handlePurchase} className="w-full py-4 bg-[#E2C275] text-[#050B18] font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-[#c2a661]">

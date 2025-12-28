@@ -11,6 +11,8 @@ export interface Coordinates {
   lng: number;
 }
 
+export type MoveStatus = 'moving' | 'living';
+
 export interface UserData {
   name: string;
   gender: 'male' | 'female' | null;
@@ -21,6 +23,7 @@ export interface UserData {
   coordinates: Coordinates | null; 
   houseDirection: string;
   roomImage: File | null;
+  moveStatus: MoveStatus; // New field
 }
 
 // Compatibility Radar Chart Data
@@ -49,6 +52,7 @@ export interface AnalysisResult {
   premiumReport: {
     title: string;
     price: string;
+    originalPrice: string; // New field for discount display
     sections: {
       title: string;
       icon: string;
