@@ -3,7 +3,7 @@ import {
   Compass, MapPin, User, Sparkles, RefreshCw, Share2, 
   ShoppingBag, Camera, Image as ImageIcon, CheckCircle2, 
   AlertTriangle, Lock, Search, Map as MapIcon, X,
-  ChevronRight, Locate
+  ChevronRight, Locate, ArrowRight
 } from 'lucide-react';
 import { UserData, AnalysisResult, Coordinates } from './types';
 import { analyzeFortune } from './services/fengShuiLogic';
@@ -36,6 +36,12 @@ const LocationPicker = ({ onLocationSelect }: { onLocationSelect: (addr: string,
   const mapRef = useRef<HTMLDivElement>(null);
   const [tempCoords, setTempCoords] = useState<Coordinates | null>(null);
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+  
+  // Search State
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const mapInstance = useRef<any>(null);
+  const markerInstance = useRef<any>(null);
 
   // Initialize Naver Map
   useEffect(() => {
@@ -49,11 +55,14 @@ const LocationPicker = ({ onLocationSelect }: { onLocationSelect: (addr: string,
                 logoControl: false,
                 mapDataControl: false,
             });
+            
+            mapInstance.current = map;
 
             const marker = new window.naver.maps.Marker({
                 position: center,
                 map: map
             });
+            markerInstance.current = marker;
 
             window.naver.maps.Event.addListener(map, 'click', (e: any) => {
                 marker.setPosition(e.coord);
@@ -82,9 +91,43 @@ const LocationPicker = ({ onLocationSelect }: { onLocationSelect: (addr: string,
     }
   }, [isOpen, isMapLoaded]);
 
+  // Address Search Handler (Using OpenStreetMap Nominatim for Frontend-only solution)
+  const handleAddressSearch = async (e?: React.FormEvent) => {
+      e?.preventDefault();
+      if (!searchQuery.trim()) return;
+
+      setIsSearching(true);
+      try {
+          // Use OpenStreetMap Nominatim API (Free, no key needed for client-side low volume)
+          const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}`);
+          const data = await response.json();
+
+          if (data && data.length > 0) {
+              const { lat, lon } = data[0];
+              const newLat = parseFloat(lat);
+              const newLng = parseFloat(lon);
+              
+              if (mapInstance.current && window.naver) {
+                  const newCenter = new window.naver.maps.LatLng(newLat, newLng);
+                  mapInstance.current.setCenter(newCenter);
+                  markerInstance.current.setPosition(newCenter);
+                  setTempCoords({ lat: newLat, lng: newLng });
+              }
+          } else {
+              alert("주소를 찾을 수 없습니다. 도로명 주소를 정확히 입력해주세요.");
+          }
+      } catch (err) {
+          console.error("Search failed", err);
+          alert("검색 중 오류가 발생했습니다.");
+      } finally {
+          setIsSearching(false);
+      }
+  };
+
   const handleConfirm = () => {
       if (tempCoords) {
-          onLocationSelect(`위도 ${tempCoords.lat.toFixed(4)}, 경도 ${tempCoords.lng.toFixed(4)}`, tempCoords);
+          const addrText = searchQuery ? searchQuery : `위도 ${tempCoords.lat.toFixed(4)}, 경도 ${tempCoords.lng.toFixed(4)}`;
+          onLocationSelect(addrText, tempCoords);
           setIsOpen(false);
       }
   };
@@ -95,27 +138,53 @@ const LocationPicker = ({ onLocationSelect }: { onLocationSelect: (addr: string,
             onClick={() => setIsOpen(true)}
             className="w-full bg-[#0A1224] border border-[#E2C275]/10 rounded-xl py-3 px-4 text-sm flex items-center justify-between cursor-pointer hover:border-[#E2C275]/50 transition-colors"
         >
-            <span className="text-gray-400 flex items-center gap-2">
-                <MapIcon className="w-4 h-4" /> 
-                {tempCoords ? "위치 선택 완료" : "지도에서 위치 찾기"}
+            <span className="text-gray-400 flex items-center gap-2 truncate">
+                <MapIcon className="w-4 h-4 flex-shrink-0" /> 
+                {tempCoords ? (searchQuery || "위치 선택 완료") : "주소 검색 / 지도에서 찾기"}
             </span>
             <Search className="w-4 h-4 text-[#E2C275]" />
         </div>
 
         {isOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 animate-in fade-in duration-200">
-                <div className="bg-[#0A1224] w-full max-w-md rounded-2xl overflow-hidden border border-[#E2C275]/20 flex flex-col h-[80vh]">
-                    <div className="p-4 flex justify-between items-center border-b border-[#E2C275]/10">
-                        <h3 className="text-white font-bold flex items-center gap-2">
-                            <MapPin className="w-4 h-4 text-[#E2C275]" /> 위치 설정
-                        </h3>
-                        <button onClick={() => setIsOpen(false)}><X className="w-6 h-6 text-gray-400" /></button>
+                <div className="bg-[#0A1224] w-full max-w-md rounded-2xl overflow-hidden border border-[#E2C275]/20 flex flex-col h-[85vh]">
+                    
+                    {/* Header with Search */}
+                    <div className="p-4 border-b border-[#E2C275]/10 bg-[#0A1224] z-10">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-white font-bold flex items-center gap-2">
+                                <MapPin className="w-4 h-4 text-[#E2C275]" /> 위치 설정
+                            </h3>
+                            <button onClick={() => setIsOpen(false)}><X className="w-6 h-6 text-gray-400" /></button>
+                        </div>
+                        
+                        <form onSubmit={handleAddressSearch} className="flex gap-2">
+                            <input 
+                                type="text" 
+                                placeholder="예: 서울시 강남구 언주로 117"
+                                className="flex-1 bg-[#151c32] text-white text-sm rounded-lg px-4 py-3 border border-gray-700 focus:border-[#E2C275] outline-none"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                            <button 
+                                type="submit"
+                                disabled={isSearching}
+                                className="bg-[#E2C275] text-[#050B18] font-bold rounded-lg px-4 flex items-center justify-center disabled:opacity-50"
+                            >
+                                {isSearching ? <div className="w-4 h-4 border-2 border-[#050B18] border-t-transparent rounded-full animate-spin" /> : <Search className="w-4 h-4" />}
+                            </button>
+                        </form>
                     </div>
                     
                     <div className="flex-1 relative bg-gray-900">
                         {/* Map Container */}
                         <div ref={mapRef} className="w-full h-full" />
                         
+                        {/* Center Marker Overlay Hint */}
+                        <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur px-3 py-1 rounded-full text-[10px] text-white shadow-lg pointer-events-none z-10">
+                            지도를 움직여 핀을 맞춰주세요
+                        </div>
+
                         {isLoadingLocation && (
                              <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
                                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-[#E2C275]"></div>
@@ -123,12 +192,13 @@ const LocationPicker = ({ onLocationSelect }: { onLocationSelect: (addr: string,
                         )}
 
                         {!window.naver && !isLoadingLocation && (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 bg-gray-900/95 text-gray-300">
+                            <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 bg-gray-900/95 text-gray-300 z-20">
                                 <AlertTriangle className="w-10 h-10 text-[#E2C275] mb-4" />
                                 <h4 className="font-bold text-lg mb-2">지도를 불러올 수 없습니다</h4>
                                 <p className="text-sm text-gray-400 mb-4">
-                                    네이버 지도 로딩에 실패했습니다.<br/>
-                                    Vercel 환경변수 설정을 확인해주세요.
+                                    인증 실패 원인:<br/>
+                                    네이버 클라우드 Console의 <b>Web 서비스 URL</b>에<br/>
+                                    <span className="text-[#E2C275]">현재 접속한 도메인</span>이 등록되지 않았습니다.
                                 </p>
                             </div>
                         )}
@@ -140,7 +210,7 @@ const LocationPicker = ({ onLocationSelect }: { onLocationSelect: (addr: string,
                             disabled={!tempCoords}
                             className="w-full py-3 bg-[#E2C275] text-[#050B18] font-bold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#c2a661] transition-colors"
                         >
-                            이 위치로 분석하기
+                            이 위치로 확인 완료
                         </button>
                     </div>
                 </div>
@@ -169,7 +239,6 @@ export default function App() {
 
   // Dynamic Script Loader for Naver Maps using Vercel Env Var
   useEffect(() => {
-    // Try to get env variable from Vite or standard process.env
     // @ts-ignore
     const clientId = import.meta.env?.VITE_NAVER_CLIENT_ID;
 
@@ -187,7 +256,6 @@ export default function App() {
     if (!formData.name || !formData.birthDate) return;
     setStep('loading');
     
-    // Simulate AI Processing & Geo Analysis Time
     setTimeout(async () => {
         const res = await analyzeFortune(
             formData.name,
@@ -202,13 +270,11 @@ export default function App() {
   };
 
   const handleSearchLink = (keyword: string) => {
-      // Dynamic Search Link Strategy (Opens new window)
       const url = `https://m.search.shopping.naver.com/search/all?query=${encodeURIComponent(keyword)}`;
       window.open(url, '_blank');
   };
 
   const unlockPremium = () => {
-      // Simulated Payment Process
       if (confirm("프리미엄 정밀 분석 리포트를 확인하시겠습니까? (테스트: 무료)")) {
           setIsPremiumUnlocked(true);
       }
@@ -240,30 +306,42 @@ export default function App() {
 
         {step === 'input' && (
             <div className="flex-1 flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-700">
-                <div className="mb-8 text-center">
-                    <h1 className="text-3xl font-bold text-white leading-tight mb-2">
-                        이사갈 집,<br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-[#F5E3B3] to-[#d97706]">터가 좋은지</span> 확인하셨나요?
+                <div className="mb-8">
+                    {/* Copywriting Update */}
+                    <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#E2C275]/10 border border-[#E2C275]/20 text-[#E2C275] text-xs font-bold mb-4">
+                        <Sparkles className="w-3 h-3" /> 
+                        <span>30년 경력 풍수지리 전문가 AI</span>
+                    </div>
+                    <h1 className="text-3xl font-bold text-white leading-tight mb-3">
+                        이 집, <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#F5E3B3] to-[#d97706]">너랑 진짜 잘 맞는지</span><br/>
+                        딱 3초면 알아봐 줄게
                     </h1>
-                    <p className="text-[#8A94A8] text-sm">
-                        지도 정밀 분석과 AI Vision으로 <br/>숨겨진 흉살까지 찾아냅니다.
+                    <p className="text-[#8A94A8] text-sm leading-relaxed">
+                        겉보기엔 좋아 보여도, 나랑 안 맞는 집은 따로 있다?<br/>
+                        지도 정밀 분석으로 숨겨진 기운까지 확인하세요.
                     </p>
                 </div>
 
                 <div className="bg-[#0A1224]/50 backdrop-blur-md border border-[#E2C275]/10 rounded-3xl p-6 shadow-2xl space-y-6">
                     {/* User Info */}
                     <div className="space-y-4">
-                        <label className="text-xs font-bold text-[#8A94A8] uppercase tracking-wider ml-1">사용자 정보</label>
+                        <label className="text-xs font-bold text-[#8A94A8] uppercase tracking-wider ml-1">내 정보 입력</label>
                         <div className="flex gap-2">
                             <input 
                                 type="text" placeholder="이름"
                                 className="flex-1 bg-[#0A1224] border border-[#E2C275]/10 rounded-xl p-3 pl-4 text-white focus:border-[#E2C275] outline-none transition-colors placeholder-gray-600 text-sm"
                                 value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})}
                             />
-                            <input 
-                                type="date"
-                                className="w-36 bg-[#0A1224] border border-[#E2C275]/10 rounded-xl p-3 text-white [color-scheme:dark] text-sm focus:border-[#E2C275] outline-none transition-colors"
-                                value={formData.birthDate} onChange={e => setFormData({...formData, birthDate: e.target.value})}
-                            />
+                            {/* Date Picker Styling */}
+                            <div className="relative w-40">
+                                <input 
+                                    type="date"
+                                    className="w-full bg-[#0A1224] border border-[#E2C275]/10 rounded-xl p-3 text-white [color-scheme:dark] text-sm focus:border-[#E2C275] outline-none transition-colors uppercase"
+                                    value={formData.birthDate} 
+                                    onChange={e => setFormData({...formData, birthDate: e.target.value})}
+                                    required
+                                />
+                            </div>
                         </div>
                     </div>
 
@@ -272,18 +350,18 @@ export default function App() {
                     {/* Location Info */}
                     <div className="space-y-4">
                         <label className="text-xs font-bold text-[#8A94A8] uppercase tracking-wider flex justify-between ml-1">
-                            <span>매물 위치 & 방향</span>
-                            <span className="text-[#E2C275] text-[10px] bg-[#E2C275]/10 px-2 py-0.5 rounded-full">정밀 지기 분석</span>
+                            <span>이사 갈 집 정보</span>
+                            <span className="text-[#E2C275] text-[10px] bg-[#E2C275]/10 px-2 py-0.5 rounded-full">필수</span>
                         </label>
                         
                         <LocationPicker onLocationSelect={(addr, coords) => setFormData({...formData, address: addr, coordinates: coords})} />
                         
                         <div className="relative">
                             <select 
-                                className="w-full bg-[#0A1224] border border-[#E2C275]/10 rounded-xl p-3 px-4 text-white appearance-none text-sm focus:border-[#E2C275] outline-none transition-colors"
+                                className="w-full bg-[#0A1224] border border-[#E2C275]/10 rounded-xl p-3 px-4 text-white appearance-none text-sm focus:border-[#E2C275] outline-none transition-colors cursor-pointer hover:bg-[#E2C275]/5"
                                 value={formData.houseDirection} onChange={e => setFormData({...formData, houseDirection: e.target.value})}
                             >
-                                {DIRECTIONS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+                                {DIRECTIONS.map(d => <option key={d.value} value={d.value}>{d.label} (현관 기준)</option>)}
                             </select>
                             <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500 text-xs">▼</div>
                         </div>
@@ -292,20 +370,19 @@ export default function App() {
                     {/* Photo Upload */}
                     <div className="space-y-4">
                         <label className="text-xs font-bold text-[#8A94A8] uppercase tracking-wider flex items-center gap-1 ml-1">
-                            방 사진 분석 <Sparkles className="w-3 h-3 text-[#E2C275]" />
+                            방 사진 (선택) <Sparkles className="w-3 h-3 text-[#E2C275]" />
                         </label>
-                        <label className={`w-full h-28 border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all ${formData.roomImage ? 'border-[#E2C275] bg-[#E2C275]/5' : 'border-[#E2C275]/20 hover:bg-[#0A1224] hover:border-[#E2C275]/50'}`}>
+                        <label className={`w-full h-24 border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all ${formData.roomImage ? 'border-[#E2C275] bg-[#E2C275]/5' : 'border-[#E2C275]/20 hover:bg-[#0A1224] hover:border-[#E2C275]/50'}`}>
                             <input type="file" className="hidden" accept="image/*" onChange={e => e.target.files && setFormData({...formData, roomImage: e.target.files[0]})} />
                             {formData.roomImage ? (
                                 <div className="flex flex-col items-center gap-1 text-[#E2C275]">
-                                    <CheckCircle2 className="w-6 h-6" />
-                                    <span className="text-xs font-medium">이미지 분석 준비 완료</span>
+                                    <CheckCircle2 className="w-5 h-5" />
+                                    <span className="text-xs font-medium">사진 입력 완료</span>
                                 </div>
                             ) : (
                                 <div className="text-center text-[#8A94A8]">
-                                    <Camera className="w-6 h-6 mx-auto mb-2 opacity-50" />
-                                    <span className="text-xs">침대/책상 배치 사진 업로드</span>
-                                    <p className="text-[10px] opacity-50 mt-1">AI가 기의 흐름을 분석합니다</p>
+                                    <Camera className="w-5 h-5 mx-auto mb-1 opacity-50" />
+                                    <span className="text-xs">침대/가구 배치 사진 올리기</span>
                                 </div>
                             )}
                         </label>
@@ -314,9 +391,9 @@ export default function App() {
                     <button 
                         onClick={handleAnalyze}
                         disabled={!formData.name || !formData.birthDate}
-                        className="w-full py-4 bg-gradient-to-r from-[#B8934D] via-[#E2C275] to-[#B8934D] text-[#050B18] font-bold text-lg rounded-xl shadow-[0_0_20px_rgba(226,194,117,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:shadow-none"
+                        className="w-full py-4 bg-gradient-to-r from-[#B8934D] via-[#E2C275] to-[#B8934D] text-[#050B18] font-bold text-lg rounded-xl shadow-[0_0_20px_rgba(226,194,117,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-2 group"
                     >
-                        무료 명당 분석하기
+                        무료로 결과 보기 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                     </button>
                 </div>
             </div>
